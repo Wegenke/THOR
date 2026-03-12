@@ -6,6 +6,7 @@ import { getParentDashboard } from '../api/dashboard'
 import { pauseAllActive } from '../api/assignments'
 import ApprovalCard from '../components/ApprovalCard'
 import ChildSummaryCard from '../components/ChildSummaryCard'
+import ChoresTab from '../components/ChoresTab'
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -64,7 +65,7 @@ export default function ParentView() {
       <div className="flex-1 overflow-y-auto p-4" {...swipeHandlers}>
         {activeTab === 'dashboard' && <DashboardTab data={data} isLoading={isLoading} />}
         {activeTab === 'rewards' && <StubTab label="Rewards" />}
-        {activeTab === 'chores' && <StubTab label="Chores" />}
+        {activeTab === 'chores' && <ChoresTab />}
         {activeTab === 'users' && <StubTab label="Users" />}
       </div>
 
