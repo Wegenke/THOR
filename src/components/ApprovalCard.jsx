@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createAvatar } from '@dicebear/core'
 import { pixelArt } from '@dicebear/collection'
 import { approveAssignment, rejectAssignment, dismissAssignment } from '../api/assignments'
+import CommentThread from './CommentThread'
+import { useKboard } from '../hooks/useKboard'
 
 function buildAvatar(avatar) {
   const { style, ...options } = avatar
@@ -15,6 +17,9 @@ export default function ApprovalCard({ assignment }) {
 
   const [rejectMode, setRejectMode] = useState(false)
   const [comment, setComment] = useState('')
+  const [showComments, setShowComments] = useState(false)
+
+  const commentKb = useKboard(comment, setComment)
 
   const approve = useMutation({ mutationFn: () => approveAssignment(assignment.id), onSuccess: invalidate })
   const reject = useMutation({
@@ -30,6 +35,7 @@ export default function ApprovalCard({ assignment }) {
   const avatarSrc = `data:image/svg+xml;utf8,${encodeURIComponent(buildAvatar(assignment.child_avatar))}`
 
   return (
+    <>
     <div className="bg-white/10 rounded-xl p-4 flex flex-col gap-3">
 
       <div className="flex items-center gap-3 px-3">
@@ -49,7 +55,7 @@ export default function ApprovalCard({ assignment }) {
           <input
             type="text"
             value={comment}
-            onChange={e => setComment(e.target.value)}
+            {...commentKb}
             placeholder="Reason for rejection…"
             className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm placeholder:text-white/30 outline-none"
             autoFocus
@@ -94,9 +100,30 @@ export default function ApprovalCard({ assignment }) {
           >
             Dismiss
           </button>
+          <button
+            onClick={() => setShowComments(true)}
+            className="flex-1 py-2 rounded-lg bg-white/10 text-sm font-medium active:bg-white/20"
+          >
+            💬
+          </button>
         </div>
       )}
 
     </div>
+
+    {showComments && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+        onClick={() => setShowComments(false)}>
+        <div className="w-[36rem] bg-slate-800 rounded-2xl p-5 flex flex-col gap-3"
+          onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between">
+            <span className="font-semibold">{assignment.chore_title}</span>
+            <button onClick={() => setShowComments(false)} className="text-white/50 active:text-white/80 text-lg">✕</button>
+          </div>
+          <CommentThread assignmentId={assignment.id} />
+        </div>
+      </div>
+    )}
+  </>
   )
 }

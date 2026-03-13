@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { KboardProvider } from './context/KboardContext'
+import VirtualKeyboard from './components/VirtualKeyboard'
 import LoginView from './views/LoginView'
 import ParentView from './views/ParentView'
 import ChildView from './views/ChildView'
@@ -19,9 +21,12 @@ function AppShell(){
 export default function App(){
   return(
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AppShell />
-      </AuthProvider>
+      <KboardProvider>
+        <AuthProvider>
+          <AppShell />
+          <VirtualKeyboard />
+        </AuthProvider>
+      </KboardProvider>
     </QueryClientProvider>
   )
 }

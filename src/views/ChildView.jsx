@@ -8,6 +8,7 @@ import ChoreCard from '../components/ChoreCard'
 import ClaimCard from '../components/ClaimCard'
 import RewardsTab from '../components/RewardsTab'
 import HistoryTab from '../components/HistoryTab'
+import ProfileSettingsModal from '../components/ProfileSettingsModal'
 
 const TABS = [
   { id: 'chores', label: 'My Chores' },
@@ -20,6 +21,7 @@ const TAB_IDS = TABS.map(t => t.id)
 export default function ChildView() {
   const { user, logout } = useAuth()
   const [activeTab, setActiveTab] = useState('chores')
+  const [showSettings, setShowSettings] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard', 'child'],
@@ -59,12 +61,15 @@ export default function ChildView() {
           ))}
         </div>
 
-        <div className="w-48 flex justify-end">
+        <div className="w-48 flex justify-end items-center gap-3">
+          <button onClick={() => setShowSettings(true)} className="text-white/40 active:text-white/70 text-lg">⚙</button>
           <button onClick={logout} className="text-sm text-white/50 active:text-white/80">
             Log out
           </button>
         </div>
       </div>
+
+      {showSettings && <ProfileSettingsModal onClose={() => setShowSettings(false)} />}
 
       <div className="flex-1 overflow-y-auto p-4" {...swipeHandlers}>
         {activeTab === 'chores' && <ChoresTab data={data} isLoading={isLoading} />}

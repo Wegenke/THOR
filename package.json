@@ -17,6 +17,7 @@
     "axios": "^1.13.6",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-simple-keyboard": "^3.8.174",
     "react-swipeable": "^7.0.2",
     "tailwindcss": "^4.2.1"
   },

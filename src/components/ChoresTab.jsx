@@ -5,10 +5,26 @@ import { pixelArt } from '@dicebear/collection'
 import { getChores, createChore, updateChore } from '../api/chores'
 import { getAssignments, createAssignment, cancelAssignment, parentPauseAssignment, reassignAssignment, assignAssignment } from '../api/assignments'
 import { getProfiles } from '../api/auth'
+import { useKboard } from '../hooks/useKboard'
 
 function buildAvatar(avatar) {
   const { style, ...options } = avatar
   return createAvatar(pixelArt, options).toString()
+}
+
+const CHORE_EMOJIS = [
+  '🧹','🧺','🧻','🧼','🧽','🪣','🪥','🛁','🚿','🚽',
+  '🍽️','🥄','🍴','🫙','🛒','🥦','🥕','🥗','🍳','🧊',
+  '🐕','🐈','🐾','🪴','💧','🌿','🌱','🌻','🌾','🍂',
+  '📚','✏️','📝','🎒','🖊️','📖','🎨','🎵','🧩','🎮',
+  '🚗','🪟','🪞','🪤','🔑','🏠','🛏️','🪑','🛋️','🏡',
+  '⚙️','🔧','🔨','🪛','🔩','🪚','💡','🔋','📦','🗑️',
+  '⭐','🏆','🎯','💰','💵','👏','✅','🌟','🎉','🥇',
+]
+
+function splitEmojis(str) {
+  if (!str) return []
+  return [...new Intl.Segmenter().segment(str)].map(s => s.segment)
 }
 
 const LIVE_STATUSES = ['assigned', 'in_progress', 'paused', 'parent_paused', 'submitted', 'rejected']
@@ -35,7 +51,6 @@ const STATUS_LABELS = {
   cancelled: 'Cancelled'
 }
 
-const EMPTY_FORM = { title: '', emoji: '🦺', points: '', description: '', recurrence_rule: '' }
 
 export default function ChoresTab() {
   const queryClient = useQueryClient()
@@ -243,46 +258,55 @@ export default function ChoresTab() {
 
 
 function ChoreForm({ initial, onSave, onCancel }) {
-  const [form, setForm] = useState(initial
-    ? { title: initial.title, emoji: initial.emoji, points: initial.points, description: initial.description || '', recurrence_rule: initial.recurrence_rule || '' }
-    : { ...EMPTY_FORM }
-  )
-  const [saving, setSaving] = useState(false)
+  const [emoji,          setEmoji]         = useState(initial?.emoji            ?? '🦺')
+  const [title,          setTitle]         = useState(initial?.title            ?? '')
+  const [points,         setPoints]        = useState(initial?.points != null   ? String(initial.points) : '')
+  const [description,    setDescription]   = useState(initial?.description      ?? '')
+  const [recurrenceRule, setRecurrenceRule] = useState(initial?.recurrence_rule ?? '')
+  const [saving,         setSaving]        = useState(false)
 
-  const set = (field) => (e) => setForm({ ...form, [field]: e.target.value })
+  const [emojiOpen, setEmojiOpen] = useState(false)
+
+  const titleKb     = useKboard(title,          setTitle)
+  const pointsKb    = useKboard(points,         setPoints,        { mode: 'numeric' })
+  const descKb      = useKboard(description,    setDescription)
+  const recurrenceKb = useKboard(recurrenceRule, setRecurrenceRule)
 
   const handleSave = () => {
-    const data = { ...form, points: Number(form.points) }
+    const data = { emoji, title, points: Number(points), description, recurrence_rule: recurrenceRule }
     if (!data.description) delete data.description
     if (!data.recurrence_rule) delete data.recurrence_rule
     setSaving(true)
     onSave(data).catch(() => setSaving(false))
   }
 
-  const valid = form.title.trim() && form.emoji.trim() && form.points && Number(form.points) % 10 === 0
+  const valid = title.trim() && emoji.trim() && points && Number(points) % 10 === 0
 
   return (
     <div className="bg-white/10 rounded-xl p-4 flex flex-col gap-2">
+      {emojiOpen && (
+        <EmojiPicker selected={emoji} onSelect={setEmoji} onClose={() => setEmojiOpen(false)} />
+      )}
       <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setEmojiOpen(o => !o)}
+          className="w-14 bg-white/10 rounded-lg px-2 py-2 text-center text-2xl active:bg-white/20 shrink-0"
+        >
+          {emoji}
+        </button>
         <input
           type="text"
-          value={form.emoji}
-          onChange={set('emoji')}
-          className="w-14 bg-white/10 rounded-lg px-2 py-2 text-center text-lg outline-none"
-          placeholder="🦺"
-        />
-        <input
-          type="text"
-          value={form.title}
-          onChange={set('title')}
+          value={title}
+          {...titleKb}
           className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-sm outline-none placeholder:text-white/30"
           placeholder="Chore title"
           autoFocus
         />
         <input
           type="number"
-          value={form.points}
-          onChange={set('points')}
+          value={points}
+          {...pointsKb}
           step="10"
           min="10"
           className="w-20 bg-white/10 rounded-lg px-3 py-2 text-sm outline-none placeholder:text-white/30"
@@ -291,15 +315,15 @@ function ChoreForm({ initial, onSave, onCancel }) {
       </div>
       <input
         type="text"
-        value={form.description}
-        onChange={set('description')}
+        value={description}
+        {...descKb}
         className="bg-white/10 rounded-lg px-3 py-2 text-sm outline-none placeholder:text-white/30"
         placeholder="Description (optional)"
       />
       <input
         type="text"
-        value={form.recurrence_rule}
-        onChange={set('recurrence_rule')}
+        value={recurrenceRule}
+        {...recurrenceKb}
         className="bg-white/10 rounded-lg px-3 py-2 text-sm outline-none placeholder:text-white/30"
         placeholder="Recurrence rule (optional)"
       />
@@ -318,6 +342,58 @@ function ChoreForm({ initial, onSave, onCancel }) {
         >
           Cancel
         </button>
+      </div>
+    </div>
+  )
+}
+
+
+function EmojiPicker({ selected, onSelect, onClose }) {
+  const parts = splitEmojis(selected)
+
+  const handlePick = (e) => {
+    if (parts.length < 2) {
+      const next = selected + e
+      onSelect(next)
+      if (parts.length === 1) onClose()
+    }
+  }
+
+  const handleRemove = (idx) => {
+    onSelect(parts.filter((_, i) => i !== idx).join(''))
+  }
+
+  return (
+    <div className="bg-slate-700 rounded-xl p-3 flex flex-col gap-2 border border-white/10">
+      <div className="flex items-center justify-between px-1">
+        <span className="text-xs text-white/40 uppercase tracking-wide">Pick an emoji</span>
+        <button type="button" onClick={onClose} className="text-white/40 active:text-white/70 text-sm">✕</button>
+      </div>
+      <div className="flex items-center gap-2 px-1">
+        {parts.map((e, i) => (
+          <div key={i} className="flex items-center gap-1 bg-white/20 rounded-lg px-2 py-1">
+            <span className="text-xl">{e}</span>
+            <button type="button" onClick={() => handleRemove(i)} className="text-white/40 active:text-white/70 text-xs leading-none">✕</button>
+          </div>
+        ))}
+        {parts.length < 2 && (
+          <span className="text-xs text-white/30 italic">
+            {parts.length === 0 ? 'Tap to pick' : 'Tap to add a second'}
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-10 gap-1">
+        {CHORE_EMOJIS.map(e => (
+          <button
+            key={e}
+            type="button"
+            onClick={() => handlePick(e)}
+            disabled={parts.length >= 2}
+            className={`text-xl p-1.5 rounded-lg active:bg-white/20 disabled:opacity-30 ${parts.includes(e) ? 'bg-white/20' : ''}`}
+          >
+            {e}
+          </button>
+        ))}
       </div>
     </div>
   )

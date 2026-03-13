@@ -1,12 +1,17 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createReward } from '../api/rewards'
+import { useKboard } from '../hooks/useKboard'
 
 export default function RequestRewardModal({ onClose }) {
   const queryClient = useQueryClient()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [link, setLink] = useState('')
+
+  const nameKb = useKboard(name, setName)
+  const descKb  = useKboard(description, setDescription)
+  const linkKb  = useKboard(link, setLink)
 
   const { mutate, isPending } = useMutation({
     mutationFn: () => createReward({
@@ -25,15 +30,15 @@ export default function RequestRewardModal({ onClose }) {
       <div className="bg-slate-800 rounded-2xl p-6 w-96 flex flex-col gap-4">
         <h2 className="text-lg font-semibold">Request a Reward</h2>
 
-        <input value={name} onChange={e => setName(e.target.value)}
+        <input value={name} {...nameKb}
           placeholder="What do you want?"
           className="bg-white/10 rounded-xl px-4 py-2 text-sm outline-none" />
 
-        <textarea value={description} onChange={e => setDescription(e.target.value)}
+        <textarea value={description} {...descKb}
           placeholder="Any details... (optional)" rows={2}
           className="bg-white/10 rounded-xl px-4 py-2 text-sm outline-none resize-none" />
 
-        <input value={link} onChange={e => setLink(e.target.value)}
+        <input value={link} {...linkKb}
           placeholder="Link (optional)"
           className="bg-white/10 rounded-xl px-4 py-2 text-sm outline-none" />
 

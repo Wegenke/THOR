@@ -7,3 +7,57 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ── Virtual Keyboard Dark Theme ── */
+.kboard-dark {
+  background: #0f172a;
+  padding: 8px 10px 14px;
+  border-radius: 0;
+}
+.kboard-dark .hg-row {
+  gap: 5px;
+  margin-bottom: 5px;
+}
+.kboard-dark .hg-button {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  border-radius: 9px;
+  height: 50px;
+  font-size: 15px;
+  font-weight: 500;
+  box-shadow: none;
+  flex-shrink: 1;
+  cursor: pointer;
+}
+.kboard-dark .hg-button:active,
+.kboard-dark .hg-button.hg-activeButton {
+  background: rgba(255, 255, 255, 0.25);
+}
+.kboard-dark .hg-button[data-skbtn="{bksp}"] {
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 20px;
+  max-width: 80px;
+}
+.kboard-dark .hg-button[data-skbtn="{shift}"] {
+  background: rgba(255, 255, 255, 0.06);
+  max-width: 80px;
+}
+.kboard-dark .hg-button[data-skbtn="{numbers}"],
+.kboard-dark .hg-button[data-skbtn="{abc}"] {
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 13px;
+  max-width: 72px;
+}
+.kboard-dark .hg-button[data-skbtn="{space}"] {
+  flex-grow: 4;
+}
+.kboard-dark .hg-button[data-skbtn="{done}"] {
+  background: rgba(79, 70, 229, 0.5);
+  font-size: 13px;
+  font-weight: 600;
+  max-width: 110px;
+}
+.kboard-dark .hg-button[data-skbtn="{done}"]:active {
+  background: rgba(79, 70, 229, 0.85);
+}

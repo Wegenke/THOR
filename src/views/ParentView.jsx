@@ -7,11 +7,14 @@ import { pauseAllActive } from '../api/assignments'
 import ApprovalCard from '../components/ApprovalCard'
 import ChildSummaryCard from '../components/ChildSummaryCard'
 import ChoresTab from '../components/ChoresTab'
+import ParentHistoryTab from '../components/ParentHistoryTab'
+import ParentUsersTab from '../components/ParentUsersTab'
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'rewards', label: 'Rewards' },
   { id: 'chores', label: 'Chores' },
+  { id: 'history', label: 'History' },
   { id: 'users', label: 'Users' }
 ]
 const TAB_IDS = TABS.map(t => t.id)
@@ -66,7 +69,8 @@ export default function ParentView() {
         {activeTab === 'dashboard' && <DashboardTab data={data} isLoading={isLoading} />}
         {activeTab === 'rewards' && <StubTab label="Rewards" />}
         {activeTab === 'chores' && <ChoresTab />}
-        {activeTab === 'users' && <StubTab label="Users" />}
+        {activeTab === 'history' && <ParentHistoryTab />}
+        {activeTab === 'users' && <ParentUsersTab />}
       </div>
 
     </div>

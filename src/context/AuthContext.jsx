@@ -15,6 +15,7 @@ export function AuthProvider({children}){
   },[])
 
   const login = (userData) => setUser(userData)
+  const updateUser = (patch) => setUser(prev => ({ ...prev, ...patch }))
 
   const logout = async () => {
     await apiLogout()
@@ -22,7 +23,7 @@ export function AuthProvider({children}){
   }
 
   return (
-    <AuthContext.Provider value={{user, login, logout, loading}}>
+    <AuthContext.Provider value={{user, login, logout, updateUser, loading}}>
       {children}
     </AuthContext.Provider>
 

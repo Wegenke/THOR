@@ -9,6 +9,12 @@ const TX_COLORS = {
   reward_refund: 'text-amber-400'
 }
 
+const SOURCE_EMOJI = {
+  chore_approved: '✅',
+  reward_contribution: '🎁',
+  reward_refund: '↩️'
+}
+
 export default function HistoryTab() {
   const [page, setPage] = useState(1)
   const { data, isLoading } = useQuery({
@@ -37,9 +43,12 @@ export default function HistoryTab() {
     <div className="flex flex-col gap-2 max-w-lg mx-auto">
       {transactions.map(tx => (
         <div key={tx.id} className="flex items-center justify-between px-4 py-3 bg-white/10 rounded-xl">
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">{tx.reference_title ?? SOURCE_LABELS[tx.source]}</span>
-            <span className="text-xs text-white/40">{new Date(tx.created_at).toLocaleDateString()}</span>
+          <div className="flex items-start gap-2 min-w-0">
+            <span className="text-base shrink-0">{SOURCE_EMOJI[tx.source]}</span>
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-sm font-medium truncate">{tx.reference_title ?? SOURCE_LABELS[tx.source]}</span>
+              <span className="text-xs text-white/40">{new Date(tx.created_at).toLocaleDateString()}</span>
+            </div>
           </div>
           <span className={`font-semibold ${TX_COLORS[tx.source] ?? 'text-white/60'}`}>
             {tx.amount > 0 ? '+' : ''}{tx.amount} pts
