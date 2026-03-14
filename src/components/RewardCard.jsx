@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { contributeToReward, requestRefund } from '../api/rewards'
 
-export default function RewardCard({ reward, userId }) {
+export default function RewardCard({ reward, userId, pointsBalance = 0 }) {
   const queryClient = useQueryClient()
   const [contributing, setContributing] = useState(false)
   const [amount, setAmount] = useState(10)
@@ -31,6 +31,7 @@ export default function RewardCard({ reward, userId }) {
   const totalPct  = myPct + othersPct
 
   const refundEligible = mine > 0 && !reward.refund_requested
+  const maxContrib = Math.floor(Math.min(reward.remaining, pointsBalance) / 10) * 10
 
   return (
     <div className={`bg-white/10 rounded-xl p-4 flex flex-col gap-3 ${!canInteract ? 'opacity-60' : ''}`}>
@@ -73,8 +74,8 @@ export default function RewardCard({ reward, userId }) {
           </button>
           <div className="flex-1 text-center font-bold text-xl">{amount} pts</div>
           <button
-            onClick={() => setAmount(a => Math.min(reward.remaining, a + 10))}
-            disabled={amount >= reward.remaining}
+            onClick={() => setAmount(a => Math.min(maxContrib, a + 10))}
+            disabled={amount >= maxContrib}
             className="w-11 h-11 rounded-lg bg-white/10 text-xl font-bold disabled:opacity-30 active:bg-white/20"
           >
             +
@@ -97,9 +98,9 @@ export default function RewardCard({ reward, userId }) {
         <div className="flex gap-2">
           <button
             onClick={() => setContributing(true)}
-            disabled={!canInteract || reward.status === 'funded'}
+            disabled={!canInteract || reward.status === 'funded' || maxContrib === 0}
             className={`flex-1 py-2 rounded-lg text-sm font-medium
-              ${canInteract && reward.status !== 'funded'
+              ${canInteract && reward.status !== 'funded' && maxContrib > 0
                 ? 'bg-indigo-600/80 active:bg-indigo-600'
                 : 'bg-indigo-600/20 text-indigo-300/40 cursor-default'}`}
           >

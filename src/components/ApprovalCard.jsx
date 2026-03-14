@@ -1,15 +1,9 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createAvatar } from '@dicebear/core'
-import { pixelArt } from '@dicebear/collection'
+import { buildAvatarSrc } from '../utils/avatar'
 import { approveAssignment, rejectAssignment, dismissAssignment } from '../api/assignments'
 import CommentThread from './CommentThread'
 import { useKboard } from '../hooks/useKboard'
-
-function buildAvatar(avatar) {
-  const { style, ...options } = avatar
-  return createAvatar(pixelArt, options).toString()
-}
 
 export default function ApprovalCard({ assignment }) {
   const queryClient = useQueryClient()
@@ -32,7 +26,7 @@ export default function ApprovalCard({ assignment }) {
 
   const submittedAt = new Date(assignment.submitted_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-  const avatarSrc = `data:image/svg+xml;utf8,${encodeURIComponent(buildAvatar(assignment.child_avatar))}`
+  const avatarSrc = buildAvatarSrc(assignment.child_avatar)
 
   return (
     <>

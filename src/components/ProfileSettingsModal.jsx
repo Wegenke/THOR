@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { createAvatar } from '@dicebear/core'
-import { pixelArt } from '@dicebear/collection'
+import { buildAvatarSrc } from '../utils/avatar'
 import { useAuth } from '../context/AuthContext'
 import { updateMe } from '../api/users'
 import { useKboard } from '../hooks/useKboard'
+import AvatarCustomizerModal from './AvatarCustomizerModal'
 
 export default function ProfileSettingsModal({ onClose }) {
   const { user, updateUser } = useAuth()
 
+  const [avatar, setAvatar] = useState(user.avatar ?? null)
+  const [showCustomizer, setShowCustomizer] = useState(false)
   const [nickName, setNickName] = useState(user.nick_name ?? '')
   const [showPin, setShowPin] = useState(false)
   const [newPin, setNewPin] = useState('')
@@ -18,11 +20,7 @@ export default function ProfileSettingsModal({ onClose }) {
   const newPinKb     = useKboard(newPin, setNewPin, { mode: 'numeric', maxLength: 8 })
   const confirmPinKb = useKboard(confirmPin, setConfirmPin, { mode: 'numeric', maxLength: 8 })
 
-  const avatarSrc = (() => {
-    if (!user.avatar) return null
-    const { style, ...options } = user.avatar
-    return `data:image/svg+xml;utf8,${encodeURIComponent(createAvatar(pixelArt, options).toString())}`
-  })()
+  const avatarSrc = buildAvatarSrc(avatar)
 
   const mutation = useMutation({
     mutationFn: (data) => updateMe(data),
@@ -38,6 +36,7 @@ export default function ProfileSettingsModal({ onClose }) {
     const data = {}
     if (nickName !== (user.nick_name ?? '')) data.nick_name = nickName
     if (showPin && newPin) data.pin = newPin
+    if (JSON.stringify(avatar) !== JSON.stringify(user.avatar)) data.avatar = avatar
     if (Object.keys(data).length === 0) { onClose(); return }
     mutation.mutate(data)
   }
@@ -45,6 +44,7 @@ export default function ProfileSettingsModal({ onClose }) {
   const pinMismatch = showPin && confirmPin && newPin !== confirmPin
 
   return (
+    <>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
       onClick={onClose}>
       <div className="w-88 bg-slate-800 rounded-2xl p-5 flex flex-col gap-4"
@@ -58,13 +58,16 @@ export default function ProfileSettingsModal({ onClose }) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
 
           {/* Avatar */}
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-2">
             {avatarSrc
               ? <img src={avatarSrc} alt="avatar" className="w-16 h-16 rounded-full bg-white/10" />
               : <div className="w-16 h-16 rounded-full bg-white/10" />
             }
+            <button type="button" onClick={() => setShowCustomizer(true)}
+              className="text-xs text-indigo-400/80 active:text-indigo-300">
+              Change Avatar
+            </button>
           </div>
-          <p className="text-center text-xs text-white/30">Avatar customization coming soon.</p>
 
           {/* Nickname */}
           <div className="flex flex-col gap-1">
@@ -134,5 +137,14 @@ export default function ProfileSettingsModal({ onClose }) {
         </form>
       </div>
     </div>
+
+    {showCustomizer && (
+      <AvatarCustomizerModal
+        initialAvatar={avatar}
+        onSelect={(a) => { setAvatar(a); setShowCustomizer(false) }}
+        onClose={() => setShowCustomizer(false)}
+      />
+    )}
+    </>
   )
 }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSwipeable } from 'react-swipeable'
 import { useAuth } from '../context/AuthContext'
+import { buildAvatarSrc } from '../utils/avatar'
 import { getChildDashboard } from '../api/dashboard'
 import { getAvailableAssignments } from '../api/assignments'
 import ChoreCard from '../components/ChoreCard'
@@ -30,8 +31,8 @@ export default function ChildView() {
 
   const currentIndex = TAB_IDS.indexOf(activeTab)
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => { if (currentIndex < TAB_IDS.length - 1) setActiveTab(TAB_IDS[currentIndex + 1]) },
-    onSwipedRight: () => { if (currentIndex > 0) setActiveTab(TAB_IDS[currentIndex - 1]) },
+    onSwipedLeft: (e) => { if (e.event.target.closest?.('[data-no-swipe]')) return; if (currentIndex < TAB_IDS.length - 1) setActiveTab(TAB_IDS[currentIndex + 1]) },
+    onSwipedRight: (e) => { if (e.event.target.closest?.('[data-no-swipe]')) return; if (currentIndex > 0) setActiveTab(TAB_IDS[currentIndex - 1]) },
     trackTouch: true
   })
 
@@ -40,6 +41,9 @@ export default function ChildView() {
 
       <div className="flex items-center px-6 py-3 border-b border-white/10 gap-4">
         <div className="flex items-center gap-3 min-w-0 w-48">
+          <button onClick={() => setShowSettings(true)} className="shrink-0">
+            <img src={buildAvatarSrc(user.avatar)} alt={user.name} className="w-9 h-9 rounded-full" />
+          </button>
           <span className="font-semibold truncate">{user.nick_name || user.name}</span>
           {!isLoading && data && (
             <span className="bg-white/10 px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap">
@@ -62,7 +66,6 @@ export default function ChildView() {
         </div>
 
         <div className="w-48 flex justify-end items-center gap-3">
-          <button onClick={() => setShowSettings(true)} className="text-white/40 active:text-white/70 text-lg">⚙</button>
           <button onClick={logout} className="text-sm text-white/50 active:text-white/80">
             Log out
           </button>

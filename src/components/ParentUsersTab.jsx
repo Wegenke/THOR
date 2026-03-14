@@ -1,16 +1,9 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { createAvatar } from '@dicebear/core'
-import { pixelArt } from '@dicebear/collection'
+import { buildAvatarSrc } from '../utils/avatar'
 import { useAuth } from '../context/AuthContext'
 import { getUsers, getRecentPinChanges } from '../api/users'
 import UserForm from './UserForm'
-
-function avatarSrc(avatar) {
-  if (!avatar) return null
-  const { style, ...options } = avatar
-  return `data:image/svg+xml;utf8,${encodeURIComponent(createAvatar(pixelArt, options).toString())}`
-}
 
 function UserCard({ user, canEdit, onEdit }) {
   return (
@@ -20,7 +13,7 @@ function UserCard({ user, canEdit, onEdit }) {
         ${canEdit ? 'active:bg-white/15 cursor-pointer' : 'opacity-60 cursor-default'}`}
     >
       {user.avatar ? (
-        <img src={avatarSrc(user.avatar)} alt={user.name} className="w-10 h-10 rounded-full shrink-0" />
+        <img src={buildAvatarSrc(user.avatar)} alt={user.name} className="w-10 h-10 rounded-full shrink-0" />
       ) : (
         <div className="w-10 h-10 rounded-full bg-white/10 shrink-0" />
       )}

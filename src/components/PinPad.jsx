@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { createAvatar } from '@dicebear/core'
-import { pixelArt } from '@dicebear/collection'
+import { buildAvatarSrc } from '../utils/avatar'
 import { login } from '../api/auth'
 import { useAuth } from '../context/AuthContext'
 
@@ -12,8 +11,7 @@ export default function PinPad({ user, onLockout, onBack }) {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  const { style, ...options } = user.avatar
-  const avatarSrc = `data:image/svg+xml;utf8,${encodeURIComponent(createAvatar(pixelArt, options).toString())}`
+  const avatarSrc = buildAvatarSrc(user.avatar)
 
   const handleKey = (key) => {
     if (submitting) return

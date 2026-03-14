@@ -1,11 +1,7 @@
-import { createAvatar } from '@dicebear/core'
-import { pixelArt } from '@dicebear/collection'
+import { buildAvatarSrc } from '../utils/avatar'
 
 export default function ChildSummaryCard({ child }) {
-  const { style, ...options } = child.avatar
-  const avatarSrc = `data:image/svg+xml;utf8,${encodeURIComponent(
-    createAvatar(pixelArt, options).toString()
-  )}`
+  const avatarSrc = buildAvatarSrc(child.avatar)
 
   const counts = child.assignment_counts || {}
   const active = (counts.in_progress || 0) + (counts.paused || 0) + (counts.parent_paused || 0)

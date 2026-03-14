@@ -1,14 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { createAvatar } from '@dicebear/core'
-import { pixelArt } from '@dicebear/collection'
+import { buildAvatarSrc } from '../utils/avatar'
 import { getHouseholdTransactions, getTransactionsByChild } from '../api/transactions'
-
-function childAvatarSrc(avatar) {
-  if (!avatar) return null
-  const { style, ...options } = avatar
-  return `data:image/svg+xml;utf8,${encodeURIComponent(createAvatar(pixelArt, options).toString())}`
-}
 
 const TX_COLORS = {
   chore_approved: 'text-green-400',
@@ -49,7 +42,7 @@ function TransactionRow({ tx, showChild = false, onChildClick }) {
               className="flex items-center gap-1 text-indigo-400/80 active:text-indigo-300 font-medium"
             >
               {tx.child_avatar && (
-                <img src={childAvatarSrc(tx.child_avatar)} alt={tx.child_name} className="w-4 h-4 rounded-full" />
+                <img src={buildAvatarSrc(tx.child_avatar)} alt={tx.child_name} className="w-4 h-4 rounded-full" />
               )}
               {tx.child_name}
             </button>

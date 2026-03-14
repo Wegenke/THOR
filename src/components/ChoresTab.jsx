@@ -1,16 +1,10 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { createAvatar } from '@dicebear/core'
-import { pixelArt } from '@dicebear/collection'
+import { buildAvatarSrc } from '../utils/avatar'
 import { getChores, createChore, updateChore } from '../api/chores'
 import { getAssignments, createAssignment, cancelAssignment, parentPauseAssignment, reassignAssignment, assignAssignment } from '../api/assignments'
 import { getProfiles } from '../api/auth'
 import { useKboard } from '../hooks/useKboard'
-
-function buildAvatar(avatar) {
-  const { style, ...options } = avatar
-  return createAvatar(pixelArt, options).toString()
-}
 
 const CHORE_EMOJIS = [
   '🧹','🧺','🧻','🧼','🧽','🪣','🪥','🛁','🚿','🚽',
@@ -113,22 +107,25 @@ export default function ChoresTab() {
             No chore templates yet
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-3">
-            {chores.map(chore => (
-              <ChoreTemplateCard
-                key={chore.id}
-                chore={chore}
-                children={children}
-                onEdit={() => { setEditingChoreId(chore.id); setShowCreateForm(false) }}
-                onAssign={(child_id) => {
-                  const body = { chore_id: chore.id }
-                  if (child_id) body.child_id = child_id
-                  createAssignment(body).then(() => {
-                    queryClient.invalidateQueries({ queryKey: ['assignments'] })
-                  })
-                }}
-              />
-            ))}
+          <div className="relative">
+            <div className="grid grid-cols-2 gap-3 overflow-y-auto max-h-[26rem] scrollbar-hide">
+              {chores.map(chore => (
+                <ChoreTemplateCard
+                  key={chore.id}
+                  chore={chore}
+                  children={children}
+                  onEdit={() => { setEditingChoreId(chore.id); setShowCreateForm(false) }}
+                  onAssign={(child_id) => {
+                    const body = { chore_id: chore.id }
+                    if (child_id) body.child_id = child_id
+                    createAssignment(body).then(() => {
+                      queryClient.invalidateQueries({ queryKey: ['assignments'] })
+                    })
+                  }}
+                />
+              ))}
+            </div>
+            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900 to-transparent" />
           </div>
         )}
       </div>
@@ -442,7 +439,7 @@ function ChoreTemplateCard({ chore, children, onEdit, onAssign }) {
               className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 ${on ? 'bg-green-600/80 opacity-60' : 'bg-blue-600/80 active:bg-blue-600'}`}
             >
               {on ? '✓' : <>
-                {child.avatar && <img src={`data:image/svg+xml;utf8,${encodeURIComponent(buildAvatar(child.avatar))}`} className="w-5 h-5 rounded-full" />}
+                {child.avatar && <img src={buildAvatarSrc(child.avatar)} className="w-5 h-5 rounded-full" />}
                 {child.name}
               </>}
             </button>
@@ -530,7 +527,7 @@ function AssignmentRow({ assignment, children }) {
       >
         {child_avatar ? (
           <img
-            src={`data:image/svg+xml;utf8,${encodeURIComponent(buildAvatar(child_avatar))}`}
+            src={buildAvatarSrc(child_avatar)}
             alt={child_name}
             className="w-8 h-8 rounded-full"
           />

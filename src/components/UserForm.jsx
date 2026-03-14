@@ -1,18 +1,16 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createAvatar } from '@dicebear/core'
-import { pixelArt } from '@dicebear/collection'
+import { buildAvatarSrc } from '../utils/avatar'
 import { createUser, updateUser, deleteUser } from '../api/users'
 import { useKboard } from '../hooks/useKboard'
-
-function avatarSrc(options) {
-  return `data:image/svg+xml;utf8,${encodeURIComponent(createAvatar(pixelArt, options).toString())}`
-}
+import AvatarCustomizerModal from './AvatarCustomizerModal'
 
 export default function UserForm({ user, onClose }) {
   const isEdit = !!user
   const queryClient = useQueryClient()
 
+  const [avatar, setAvatar] = useState(user?.avatar ?? { style: 'pixel-art', seed: Math.random().toString(36).slice(2, 10) })
+  const [showCustomizer, setShowCustomizer] = useState(false)
   const [name, setName] = useState(user?.name ?? '')
   const [nickName, setNickName] = useState(user?.nick_name ?? '')
   const [role, setRole] = useState(user?.role ?? 'child')
@@ -35,9 +33,7 @@ export default function UserForm({ user, onClose }) {
     }
   })
 
-  const avatarPreviewSrc = isEdit
-    ? avatarSrc({ ...(user.avatar ?? {}), style: undefined })
-    : avatarSrc({ seed: name.trim() || 'default' })
+  const avatarPreviewSrc = buildAvatarSrc(avatar)
 
   const mutation = useMutation({
     mutationFn: (data) => isEdit ? updateUser(user.id, data) : createUser(data),
@@ -56,6 +52,7 @@ export default function UserForm({ user, onClose }) {
       if (nickName !== (user.nick_name ?? '')) data.nick_name = nickName
       if (role !== user.role) data.role = role
       if (pin) data.pin = pin
+      if (JSON.stringify(avatar) !== JSON.stringify(user.avatar)) data.avatar = avatar
       mutation.mutate(data)
     } else {
       mutation.mutate({
@@ -63,7 +60,7 @@ export default function UserForm({ user, onClose }) {
         nick_name: nickName.trim() || undefined,
         role,
         pin,
-        avatar: { style: 'pixel-art', seed: name.trim() || 'default' }
+        avatar
       })
     }
   }
@@ -83,19 +80,13 @@ export default function UserForm({ user, onClose }) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-3">
 
           {/* Avatar preview */}
-          <div className="flex justify-center">
-            <img
-              src={avatarPreviewSrc}
-              alt="avatar preview"
-              className="w-16 h-16 rounded-full bg-white/10"
-            />
+          <div className="flex flex-col items-center gap-2">
+            <img src={avatarPreviewSrc} alt="avatar preview" className="w-16 h-16 rounded-full bg-white/10" />
+            <button type="button" onClick={() => setShowCustomizer(true)}
+              className="text-xs text-indigo-400/80 active:text-indigo-300">
+              Change Avatar
+            </button>
           </div>
-          {!isEdit && (
-            <p className="text-center text-xs text-white/30">Avatar is generated from name. Customization coming soon.</p>
-          )}
-          {isEdit && (
-            <p className="text-center text-xs text-white/30">Avatar customization coming soon.</p>
-          )}
 
           {/* Name */}
           <div className="flex flex-col gap-1">
@@ -204,6 +195,14 @@ export default function UserForm({ user, onClose }) {
         </form>
       </div>
     </div>
+
+    {showCustomizer && (
+      <AvatarCustomizerModal
+        initialAvatar={avatar}
+        onSelect={(a) => { setAvatar(a); setShowCustomizer(false) }}
+        onClose={() => setShowCustomizer(false)}
+      />
+    )}
 
     {confirmDeactivate && (
       <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70">

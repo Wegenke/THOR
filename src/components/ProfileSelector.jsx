@@ -1,11 +1,5 @@
-import { createAvatar } from '@dicebear/core'
-import { pixelArt } from '@dicebear/collection'
+import { buildAvatarSrc } from '../utils/avatar'
 import LockoutTimer from './LockoutTimer'
-
-function buildAvatar(avatar) {
-  const { style, ...options } = avatar
-  return createAvatar(pixelArt, options).toString()
-}
 
 function ProfileGroup({ label, profiles, onSelect, lockedUsers, onLockoutExpired }) {
   return (
@@ -17,7 +11,7 @@ function ProfileGroup({ label, profiles, onSelect, lockedUsers, onLockoutExpired
         <div className="grid grid-cols-2 gap-4">
           {profiles.map(profile => {
             const isLocked = !!lockedUsers[profile.id]
-            const avatarSrc = `data:image/svg+xml;utf8,${encodeURIComponent(buildAvatar(profile.avatar))}`
+            const avatarSrc = buildAvatarSrc(profile.avatar)
             return (
               <button
                 key={profile.id}

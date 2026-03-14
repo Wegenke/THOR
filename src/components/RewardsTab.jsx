@@ -78,7 +78,7 @@ export default function RewardsTab({ data, isLoading }) {
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-3">
-          {filtered.map(r => <RewardCard key={r.id} reward={r} userId={user.id} />)}
+          {filtered.map(r => <RewardCard key={r.id} reward={r} userId={user.id} pointsBalance={data?.points_balance ?? 0} />)}
         </div>
       )}
 
