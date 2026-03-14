@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { buildAvatarSrc } from '../utils/avatar'
 import { getChores, createChore, updateChore } from '../api/chores'
-import { getAssignments, createAssignment, cancelAssignment, parentPauseAssignment, reassignAssignment, assignAssignment } from '../api/assignments'
+import { getAssignments, createAssignment, cancelAssignment, parentPauseAssignment, reassignAssignment, assignAssignment, unassignAssignment } from '../api/assignments'
 import { getProfiles } from '../api/auth'
 import { useKboard } from '../hooks/useKboard'
 
@@ -69,6 +69,7 @@ export default function ChoresTab() {
   // Chore library state
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingChoreId, setEditingChoreId] = useState(null)
+  const [viewingChore, setViewingChore] = useState(null)
   // Assignment filter state
   const [statusFilter, setStatusFilter] = useState('all')
   const [childFilter, setChildFilter] = useState('all')
@@ -114,6 +115,7 @@ export default function ChoresTab() {
                   key={chore.id}
                   chore={chore}
                   children={children}
+                  onTap={() => setViewingChore(chore)}
                   onEdit={() => { setEditingChoreId(chore.id); setShowCreateForm(false) }}
                   onAssign={(child_id) => {
                     const body = { chore_id: chore.id }
@@ -134,7 +136,7 @@ export default function ChoresTab() {
       <div className="w-96 flex flex-col gap-3 shrink-0 min-h-0">
 
         {/* Active Assignments */}
-        <div className="flex flex-col gap-3 min-h-0 flex-1">
+        <div className="flex flex-col gap-3 min-h-0 flex-[2]">
           <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1 shrink-0">
             Active Assignments {filtered.length > 0 && `(${filtered.length})`}
           </h2>
@@ -188,7 +190,7 @@ export default function ChoresTab() {
         </div>
 
         {/* Unassigned Pool */}
-        <div className="flex flex-col gap-3 min-h-0 flex-1">
+        <div className="flex flex-col gap-3 min-h-0 flex-1 max-h-52">
           <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1 shrink-0">
             Unassigned Pool {unassigned.length > 0 && `(${unassigned.length})`}
           </h2>
@@ -248,6 +250,25 @@ export default function ChoresTab() {
           </div>
         )
       })()}
+
+      {viewingChore && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+          onClick={() => setViewingChore(null)}
+        >
+          <div className="bg-slate-800 rounded-2xl p-6 max-w-sm w-full mx-4 flex flex-col gap-3">
+            <div className="text-4xl">{viewingChore.emoji}</div>
+            <div className="text-lg font-semibold">{viewingChore.title}</div>
+            {viewingChore.description && (
+              <div className="text-white/60 text-sm">{viewingChore.description}</div>
+            )}
+            <div className="text-white font-semibold">{viewingChore.points} pts</div>
+            {viewingChore.recurrence_rule && (
+              <div className="text-white/40 text-sm">Recurs: {viewingChore.recurrence_rule}</div>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   )
@@ -397,7 +418,7 @@ function EmojiPicker({ selected, onSelect, onClose }) {
 }
 
 
-function ChoreTemplateCard({ chore, children, onEdit, onAssign }) {
+function ChoreTemplateCard({ chore, children, onTap, onEdit, onAssign }) {
   const [cooldowns, setCooldowns] = useState(new Set())
 
   const handleAssign = (key, child_id) => {
@@ -407,25 +428,24 @@ function ChoreTemplateCard({ chore, children, onEdit, onAssign }) {
   }
 
   return (
-    <div className="bg-white/10 rounded-xl p-4 flex flex-col justify-between gap-3">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">{chore.emoji}</span>
-          <div>
-            <div className="font-semibold leading-tight">{chore.title}</div>
-            {chore.description && (
-              <div className="text-white/40 text-sm mt-0.5 truncate max-w-48">{chore.description}</div>
-            )}
-          </div>
-        </div>
+    <div className="bg-white/10 rounded-xl p-3 flex flex-col justify-between gap-2">
+      <div className="flex items-center justify-between">
+        <span className="text-2xl">{chore.emoji}</span>
         <div className="flex items-center gap-2">
-          <span className="text-white font-semibold whitespace-nowrap">{chore.points} pts</span>
+          <span className="text-white font-semibold text-sm whitespace-nowrap">{chore.points} pts</span>
           <button onClick={onEdit} className="text-white/50 active:text-white/80 text-xl leading-none">⚙</button>
         </div>
       </div>
 
+      <div onClick={onTap} className="cursor-pointer">
+        <div className="font-semibold leading-tight">{chore.title}</div>
+        {chore.description && (
+          <div className="text-white/40 text-sm mt-0.5 truncate">{chore.description}</div>
+        )}
+      </div>
+
       {chore.recurrence_rule && (
-        <div className="text-white/30 text-xs px-1">Recurs: {chore.recurrence_rule}</div>
+        <div className="text-white/30 text-xs">Recurs: {chore.recurrence_rule}</div>
       )}
 
       <div className="flex gap-2">
@@ -473,16 +493,16 @@ function UnassignedRow({ assignment, children }) {
   const busy = assign.isPending || cancel.isPending
 
   return (
-    <div className="bg-white/5 rounded-lg px-3 py-2 flex items-center gap-2">
-      <span className="text-lg">{assignment.emoji}</span>
-      <div className="flex-1 min-w-0 text-sm font-medium truncate">{assignment.chore_title}</div>
+    <div className="bg-white/5 rounded-lg px-3 py-2.5 flex items-center gap-2">
+      <span className="text-xl">{assignment.emoji}</span>
+      <div className="flex-1 min-w-0 text-base font-medium truncate">{assignment.chore_title}</div>
       <div className="text-white/50 text-xs whitespace-nowrap">{assignment.points} pts</div>
       {children.map(child => (
         <button
           key={child.id}
           onClick={() => assign.mutate(child.id)}
           disabled={busy}
-          className="px-2 py-1 rounded-md bg-blue-600/80 text-xs font-medium disabled:opacity-40 active:bg-blue-600"
+          className="px-3 py-2 rounded-lg bg-blue-600/80 text-sm font-medium disabled:opacity-40 active:bg-blue-600"
         >
           {child.name}
         </button>
@@ -490,7 +510,7 @@ function UnassignedRow({ assignment, children }) {
       <button
         onClick={() => cancel.mutate()}
         disabled={busy}
-        className="px-2 py-1 rounded-md bg-red-600/80 text-xs font-medium disabled:opacity-40 active:bg-red-600"
+        className="px-3 py-2 rounded-lg bg-red-600/80 text-sm font-medium disabled:opacity-40 active:bg-red-600"
       >
         ✕
       </button>
@@ -511,13 +531,15 @@ function AssignmentRow({ assignment, children }) {
     mutationFn: (child_id) => reassignAssignment(assignment.id, child_id),
     onSuccess: invalidate
   })
+  const unassign = useMutation({ mutationFn: () => unassignAssignment(assignment.id), onSuccess: invalidate })
 
-  const busy = cancel.isPending || parentPause.isPending || reassign.isPending
+  const busy = cancel.isPending || parentPause.isPending || reassign.isPending || unassign.isPending
   const { status, chore_title, emoji, points, child_name, child_avatar } = assignment
 
   const canCancel = ['assigned', 'rejected'].includes(status)
   const canPause = status === 'in_progress'
   const canReassign = ['assigned', 'rejected'].includes(status)
+  const canUnassign = ['assigned', 'rejected', 'paused', 'parent_paused'].includes(status)
 
   return (
     <div className="bg-white/10 rounded-xl px-4 py-3 flex flex-col gap-2">
@@ -562,6 +584,13 @@ function AssignmentRow({ assignment, children }) {
               → {child.name}
             </button>
           ))}
+          <button
+            onClick={() => { collapse(); unassign.mutate() }}
+            disabled={!canUnassign || busy}
+            className="px-3 py-1.5 rounded-lg bg-white/10 text-xs font-medium disabled:opacity-30 active:bg-white/20"
+          >
+            → Pool
+          </button>
           <button
             onClick={() => { collapse(); cancel.mutate() }}
             disabled={!canCancel || busy}

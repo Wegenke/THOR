@@ -39,6 +39,8 @@ export const parentPauseAssignment = (id, comment) => client.patch(`/assignments
 
 export const assignAssignment = (id, child_id) => client.patch(`/assignments/${id}/assign`, { child_id }).then(r => r.data)
 
+export const unassignAssignment = (id) => client.patch(`/assignments/${id}/unassign`).then(r => r.data)
+
 export const getAssignmentComments = (id) => client.get(`/assignments/${id}/comments`).then(r=>r.data)
 
 export const postAssignmentComment = (id, text) => client.post(`/assignments/${id}/comments`, { comment: text }).then(r=>r.data)
