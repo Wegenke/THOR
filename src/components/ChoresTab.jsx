@@ -392,6 +392,7 @@ function ChoreForm({ initial, onSave, onCancel }) {
 
 
 function EmojiPicker({ selected, onSelect, onClose }) {
+  const [showCustom, setShowCustom] = useState(false)
   const parts = splitEmojis(selected)
 
   const handlePick = (e) => {
@@ -438,6 +439,37 @@ function EmojiPicker({ selected, onSelect, onClose }) {
           </button>
         ))}
       </div>
+      {showCustom ? (
+        <div className="flex items-center gap-2 px-1 pt-1 border-t border-white/10">
+          <input
+            type="text"
+            autoFocus
+            placeholder="Paste any emoji"
+            disabled={parts.length >= 2}
+            className="flex-1 bg-white/10 rounded-lg px-3 py-1.5 text-base text-white placeholder:text-white/30 outline-none disabled:opacity-30"
+            onInput={(e) => {
+              const emojis = splitEmojis(e.target.value)
+              if (emojis.length > 0) {
+                const slots = 2 - parts.length
+                const toAdd = emojis.slice(0, slots)
+                const next = selected + toAdd.join('')
+                onSelect(next)
+                e.target.value = ''
+                if (parts.length + toAdd.length >= 2) onClose()
+              }
+            }}
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowCustom(true)}
+          disabled={parts.length >= 2}
+          className="text-xs text-white/30 hover:text-white/50 active:text-white/50 px-1 pt-1 border-t border-white/10 text-left disabled:opacity-30"
+        >
+          Custom…
+        </button>
+      )}
     </div>
   )
 }
