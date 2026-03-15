@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  base: '/thor/',
   plugins:[react(), tailwindcss()],
   server: {
     port: 3333,
@@ -15,3 +16,4 @@ export default defineConfig({
     }
   }
 })
+
