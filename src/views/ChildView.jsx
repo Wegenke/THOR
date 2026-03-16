@@ -74,11 +74,14 @@ export default function ChildView() {
 
       {showSettings && <ProfileSettingsModal onClose={() => setShowSettings(false)} />}
 
-      <div className="flex-1 overflow-y-auto p-4" {...swipeHandlers}>
-        {activeTab === 'chores' && <ChoresTab data={data} isLoading={isLoading} />}
-        {activeTab === 'claim' && <ClaimTab />}
-        {activeTab === 'rewards' && <RewardsTab data={data} isLoading={isLoading}/>}
-        {activeTab === 'history' && <HistoryTab />}
+      <div className="relative flex-1 min-h-0">
+        <div className="h-full overflow-y-auto scrollbar-hide p-4" {...swipeHandlers}>
+          {activeTab === 'chores' && <ChoresTab data={data} isLoading={isLoading} />}
+          {activeTab === 'claim' && <ClaimTab />}
+          {activeTab === 'rewards' && <RewardsTab data={data} isLoading={isLoading}/>}
+          {activeTab === 'history' && <HistoryTab />}
+        </div>
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900 to-transparent" />
       </div>
 
     </div>

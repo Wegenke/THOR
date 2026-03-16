@@ -140,13 +140,24 @@ function PendingCard({ reward, profiles, onSuccess }) {
 
       {approving ? (
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPoints(p => String(Math.max(10, (Number(p) || 10) - 10)))}
+            disabled={!points || Number(points) <= 10}
+            className="w-11 h-11 rounded-lg bg-rose-600/70 text-xl font-bold disabled:opacity-30 active:bg-rose-600 shrink-0"
+          >−</button>
           <input
             type="number"
             value={points}
             {...kbPoints}
-            placeholder="Points required"
-            className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-sm outline-none placeholder:text-white/30"
+            placeholder="Pts"
+            className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-sm outline-none placeholder:text-white/30 text-center appearance-none"
           />
+          <button
+            type="button"
+            onClick={() => setPoints(p => String((Number(p) || 0) + 10))}
+            className="w-11 h-11 rounded-lg bg-green-600/70 text-xl font-bold active:bg-green-600 shrink-0"
+          >+</button>
           <button
             onClick={() => approve.mutate()}
             disabled={!valid || approve.isPending}

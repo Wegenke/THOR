@@ -2,6 +2,7 @@ import { useState, useRef, useLayoutEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSwipeable } from 'react-swipeable'
 import { useAuth } from '../context/AuthContext'
+import { buildAvatarSrc } from '../utils/avatar'
 import { getParentDashboard } from '../api/dashboard'
 import { pauseAllActive, assignAssignment, cancelAssignment } from '../api/assignments'
 import { approveReward, rejectReward, approveRefund, rejectRefund } from '../api/rewards'
@@ -43,8 +44,9 @@ export default function ParentView() {
 
       {/* Header */}
       <div className="flex items-center px-6 py-3 border-b border-white/10 gap-4">
-        <div className="w-48">
-          <span className="font-semibold">{user.nick_name || user.name}</span>
+        <div className="flex items-center gap-3 min-w-0 w-48">
+          <img src={buildAvatarSrc(user.avatar)} alt={user.name} className="w-9 h-9 rounded-full shrink-0" />
+          <span className="font-semibold truncate">{user.nick_name || user.name}</span>
         </div>
 
         <div className="flex-1 flex justify-center gap-1">
@@ -68,12 +70,15 @@ export default function ParentView() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-4" {...swipeHandlers}>
-        {activeTab === 'dashboard' && <DashboardTab data={data} isLoading={isLoading} />}
-        {activeTab === 'rewards' && <ParentRewardsTab />}
-        {activeTab === 'chores' && <ChoresTab />}
-        {activeTab === 'history' && <ParentHistoryTab />}
-        {activeTab === 'users' && <ParentUsersTab />}
+      <div className="relative flex-1 min-h-0">
+        <div className="h-full overflow-y-auto scrollbar-hide p-4" {...swipeHandlers}>
+          {activeTab === 'dashboard' && <DashboardTab data={data} isLoading={isLoading} />}
+          {activeTab === 'rewards' && <ParentRewardsTab />}
+          {activeTab === 'chores' && <ChoresTab />}
+          {activeTab === 'history' && <ParentHistoryTab />}
+          {activeTab === 'users' && <ParentUsersTab />}
+        </div>
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900 to-transparent" />
       </div>
 
     </div>
@@ -245,13 +250,24 @@ function DashRewardCard({ reward, onSuccess }) {
 
       {approving ? (
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPoints(p => String(Math.max(10, (Number(p) || 10) - 10)))}
+            disabled={!points || Number(points) <= 10}
+            className="w-11 h-11 rounded-lg bg-rose-600/70 text-xl font-bold disabled:opacity-30 active:bg-rose-600 shrink-0"
+          >−</button>
           <input
             type="number"
             value={points}
             {...kbPoints}
-            placeholder="Points required"
-            className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-sm outline-none placeholder:text-white/30"
+            placeholder="Pts"
+            className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-sm outline-none placeholder:text-white/30 text-center appearance-none"
           />
+          <button
+            type="button"
+            onClick={() => setPoints(p => String((Number(p) || 0) + 10))}
+            className="w-11 h-11 rounded-lg bg-green-600/70 text-xl font-bold active:bg-green-600 shrink-0"
+          >+</button>
           <button
             onClick={() => approve.mutate()}
             disabled={!valid || approve.isPending}

@@ -109,8 +109,8 @@ export default function ChoresTab() {
             No chore templates yet
           </div>
         ) : (
-          <div className="relative">
-            <div className="grid grid-cols-2 gap-3 overflow-y-auto max-h-[26rem] scrollbar-hide">
+          <div className="relative flex-1 min-h-0">
+            <div className="grid grid-cols-2 gap-3 overflow-y-auto h-full scrollbar-hide">
               {chores.map(chore => (
                 <ChoreTemplateCard
                   key={chore.id}
@@ -353,15 +353,26 @@ function ChoreForm({ initial, onSave, onCancel }) {
           placeholder="Chore title"
           autoFocus
         />
-        <input
-          type="number"
-          value={points}
-          {...pointsKb}
-          step="10"
-          min="10"
-          className="w-20 bg-white/10 rounded-lg px-3 py-2 text-sm outline-none placeholder:text-white/30"
-          placeholder="Pts"
-        />
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => setPoints(p => String(Math.max(10, (Number(p) || 10) - 10)))}
+            disabled={!points || Number(points) <= 10}
+            className="w-11 h-11 rounded-lg bg-rose-600/70 text-xl font-bold disabled:opacity-30 active:bg-rose-600"
+          >−</button>
+          <input
+            type="number"
+            value={points}
+            {...pointsKb}
+            className="w-16 bg-white/10 rounded-lg px-2 py-2 text-sm outline-none placeholder:text-white/30 text-center appearance-none"
+            placeholder="Pts"
+          />
+          <button
+            type="button"
+            onClick={() => setPoints(p => String((Number(p) || 0) + 10))}
+            className="w-11 h-11 rounded-lg bg-green-600/70 text-xl font-bold active:bg-green-600"
+          >+</button>
+        </div>
       </div>
       <input
         type="text"
