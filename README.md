@@ -1,6 +1,8 @@
 # Thor
 
-The kiosk frontend for Chore Tracker. A React/Vite app served as static files — runs in Chromium kiosk mode on the touchscreen Pi, and is also accessible from any browser on the LAN.
+A family chore tracking dashboard. Built with React and Vite, designed for touchscreen kiosk use but accessible from any browser.
+
+Thor is a frontend-only application — all data and business logic comes from the [Odin](https://github.com/Wegenke/odin) backend API.
 
 ---
 
@@ -13,6 +15,7 @@ The kiosk frontend for Chore Tracker. A React/Vite app served as static files �
 | Server state | TanStack Query |
 | Local state | React Context |
 | HTTP client | Axios |
+| CSS | Tailwind CSS (@tailwindcss/vite) |
 | Avatars | DiceBear (@dicebear/core + @dicebear/collection) |
 | Language | JavaScript |
 
@@ -35,13 +38,13 @@ VITE_API_URL=/api
 
 The `/api` prefix is proxied by Vite's dev server to `http://localhost:8080` (Odin), making requests same-origin and allowing session cookies to work correctly. No manual CORS configuration needed in dev.
 
-For production, `.env.production` is:
+For production, set `VITE_API_URL` to the URL where Odin is accessible:
 
 ```env
-VITE_API_URL=http://odin
+VITE_API_URL=/odin
 ```
 
-In production, Nginx handles the routing — there is no proxy prefix.
+The exact value depends on your deployment — it should match whatever path or URL your reverse proxy uses to reach the Odin API.
 
 ---
 
@@ -64,30 +67,63 @@ Odin must be running at `http://localhost:8080` for API calls to work.
 ## Project Structure
 
 ```text
-THOR/
-  src/
-    api/
-      client.js         — axios instance (baseURL from VITE_API_URL, credentials: include)
-      auth.js           — getProfiles, login, logout, getSession
-    components/
-      ProfileSelector.jsx   — profile grid for login screen
-      PinPad.jsx            — touch-friendly numeric keypad
-      LockoutTimer.jsx      — per-user countdown on 429 lockout
-      AvatarPicker.jsx      — DiceBear option pickers (future)
-      ChoreCard.jsx         — assignment tile with action buttons (future)
-      RewardCard.jsx        — reward progress tile (future)
-      ApprovalPanel.jsx     — parent approve/reject UI (future)
-      TransactionList.jsx   — paginated point history (future)
-      ReconnectingBanner.jsx — shown when Odin is unreachable (future)
-    context/
-      AuthContext.jsx    — current user, login(), logout()
-    views/
-      LoginView.jsx      — profile selection + PIN entry
-      ChildView.jsx      — child dashboard
-      ParentView.jsx     — parent dashboard
-  .env.development
-  .env.production
-  vite.config.js
+src/
+  api/
+    client.js           — axios instance (baseURL from VITE_API_URL, credentials: include)
+    auth.js             — getProfiles, login, logout, getSession
+    assignments.js      — assignment CRUD and state transitions
+    chores.js           — chore library CRUD
+    dashboard.js        — child and parent dashboard aggregations
+    rewards.js          — reward CRUD and contributions
+    schedules.js        — recurring chore schedule management
+    setup.js            — first-time household setup
+    transactions.js     — point transaction history
+    users.js            — user management
+  components/
+    ProfileSelector.jsx — profile grid for login screen
+    PinPad.jsx          — touch-friendly numeric keypad
+    LockoutTimer.jsx    — per-user countdown on 429 lockout
+    ChoreCard.jsx       — assignment tile with action buttons
+    ChoreForm.jsx       — create/edit chore modal form
+    ChoreTemplateCard.jsx — chore library card with assign buttons
+    ClaimCard.jsx       — available-to-claim assignment tile
+    ApprovalCard.jsx    — parent approve/reject UI
+    RewardCard.jsx      — reward management tile (parent)
+    ChildSummaryCard.jsx — per-child summary on parent dashboard
+    CommentThread.jsx   — assignment comment display
+    EmojiPicker.jsx     — curated emoji grid for chore icons
+    AssignmentRow.jsx   — active assignment row with inline actions
+    UnassignedRow.jsx   — unassigned pool row with assign/cancel
+    ChoresTab.jsx       — parent chore library + assignments tab
+    HistoryTab.jsx      — child history tab
+    ParentHistoryTab.jsx — parent history tab
+    ParentRewardsTab.jsx — parent reward management tab
+    ParentUsersTab.jsx  — parent user management tab
+    RewardsTab.jsx      — child rewards tab
+    UserForm.jsx        — create/edit user form
+    AvatarPicker.jsx    — DiceBear style selector
+    AvatarCustomizerModal.jsx — full avatar customization
+    ProfileSettingsModal.jsx  — edit own nick_name, avatar, PIN
+    RequestRewardModal.jsx    — child reward request flow
+    ReconnectingBanner.jsx    — shown when Odin is unreachable
+    VirtualKeyboard.jsx — on-screen keyboard for kiosk input
+  context/
+    AuthContext.jsx     — current user, login(), logout()
+    KboardContext.jsx   — virtual keyboard state
+  hooks/
+    useIdleTimer.js     — auto-logout after inactivity
+    useKboard.js        — virtual keyboard integration
+    useOdinHealth.js    — API connectivity monitoring
+  utils/
+    avatar.js           — DiceBear avatar generation helpers
+  views/
+    LoginView.jsx       — profile selection + PIN entry
+    SetupView.jsx       — first-time household + parent creation
+    ChildView.jsx       — child dashboard (chores, rewards, history)
+    ParentView.jsx      — parent dashboard (approvals, chores, users, rewards, history)
+  App.jsx               — routing and layout
+  main.jsx              — app entry point
+reference_docs/         — thor-reference and odin API reference
 ```
 
 ---
@@ -96,10 +132,19 @@ THOR/
 
 | Screen | Role | Status |
 | --- | --- | --- |
-| Login (profile selector + PIN pad) | All | Planned |
-| Child Dashboard | Child | Planned |
-| Parent Dashboard | Parent | Planned |
-| Reward Detail | Both | Planned |
+| Login — profile selector | All | Complete |
+| Login — PIN pad | All | Complete |
+| Setup — first-time household setup | None (unauthenticated) | Complete |
+| Child — My Chores | Child | Complete |
+| Child — Available to Claim | Child | Complete |
+| Child — Rewards | Child | Complete |
+| Child — History | Child | Complete |
+| Parent — Dashboard (approvals + summaries) | Parent | Complete |
+| Parent — Chore Library & Assignments | Parent | Complete |
+| Parent — User Management | Parent | Complete |
+| Parent — Reward Management | Parent | Complete |
+| Parent — History | Parent | Complete |
+| Profile Settings (edit own nick_name, avatar, PIN) | Both | Complete |
 
 ---
 
@@ -119,17 +164,28 @@ Key endpoints used by Thor:
 | `GET /dashboard/parent` | Aggregated parent dashboard data |
 | `PATCH /assignments/:id/...` | Assignment state transitions |
 | `POST /rewards/:id/contribute` | Contribute points to a reward |
+| `GET /setup` | Check if setup is needed |
+| `POST /setup` | Create household + first parent |
 
-Full API reference: see `odin-reference.md` in the project docs.
+Full API reference: see [`reference_docs/odin-reference.md`](reference_docs/odin-reference.md).
 
 ---
 
-## Production
+## Production Build
 
-Thor runs as static files served by Nginx on a Raspberry Pi 5. Chromium runs in kiosk mode on the attached touchscreen.
+```bash
+npm run build
+```
 
-GitHub Actions builds `dist/` on every push to the `thor` repo and commits it back. The Pi pulls the pre-built files nightly — no build tools run on the Pi.
+This outputs static files to `dist/`. Serve with any static file server or reverse proxy (Nginx, Caddy, etc.).
 
-See `thor-deployment.md` in the project docs for the full setup guide.
+If deploying behind a sub-path (e.g., `/thor/`), set `base` in `vite.config.js`:
 
-Accessible from any LAN device at `http://thor`.
+```js
+export default defineConfig({
+  base: '/thor/',
+  // ...
+})
+```
+
+For detailed architecture and UX documentation, see [`reference_docs/thor-reference.md`](reference_docs/thor-reference.md).
