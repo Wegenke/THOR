@@ -9,13 +9,13 @@ function UserCard({ user, canEdit, onEdit }) {
   return (
     <div
       onClick={() => canEdit && onEdit(user)}
-      className={`flex items-center gap-3 bg-white/15 rounded-xl px-4 py-3
+      className={`flex items-center gap-4 bg-white/15 rounded-xl px-4 py-5
         ${canEdit ? 'active:bg-white/15 cursor-pointer' : 'opacity-60 cursor-default'}`}
     >
       {user.avatar ? (
-        <img src={buildAvatarSrc(user.avatar)} alt={user.name} className="w-10 h-10 rounded-full shrink-0" />
+        <img src={buildAvatarSrc(user.avatar)} alt={user.name} className="w-14 h-14 rounded-full shrink-0" />
       ) : (
-        <div className="w-10 h-10 rounded-full bg-white/10 shrink-0" />
+        <div className="w-14 h-14 rounded-full bg-white/10 shrink-0" />
       )}
       <div className="flex-1 min-w-0">
         <div className="font-medium truncate">{user.nick_name || user.name}</div>

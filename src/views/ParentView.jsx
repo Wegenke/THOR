@@ -45,8 +45,8 @@ export default function ParentView() {
       {/* Header */}
       <div className="flex items-center px-6 py-3 border-b border-white/10 gap-4">
         <div className="flex items-center gap-3 min-w-0 w-48">
-          <img src={buildAvatarSrc(user.avatar)} alt={user.name} className="w-9 h-9 rounded-full shrink-0" />
-          <span className="font-semibold truncate">{user.nick_name || user.name}</span>
+          <img src={buildAvatarSrc(user.avatar)} alt={user.name} className="w-12 h-12 rounded-full shrink-0" />
+          <span className="text-lg font-semibold truncate">{user.nick_name || user.name}</span>
         </div>
 
         <div className="flex-1 flex justify-center gap-1">
@@ -54,7 +54,7 @@ export default function ParentView() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors
+              className={`px-5 py-3.5 rounded-lg text-base font-medium transition-colors
                 ${activeTab === tab.id ? 'bg-white/15 text-white' : 'text-white/40 active:text-white/70'}`}
             >
               {tab.label}
@@ -252,8 +252,8 @@ function DashRewardCard({ reward, onSuccess }) {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setPoints(p => String(Math.max(10, (Number(p) || 10) - 10)))}
-            disabled={!points || Number(points) <= 10}
+            onClick={() => setPoints(p => String(Math.max(0, (Number(p) || 0) - 10)))}
+            disabled={!points || Number(points) <= 0}
             className="w-11 h-11 rounded-lg bg-rose-600/70 text-xl font-bold disabled:opacity-30 active:bg-rose-600 shrink-0"
           >−</button>
           <input

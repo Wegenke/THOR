@@ -50,7 +50,7 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
           <button
             type="button"
             onClick={() => setPoints(p => String(Math.max(0, (Number(p) || 0) - 10)))}
-            disabled={!points || Number(points) <= 10}
+            disabled={!points || Number(points) <= 0}
             className="w-11 h-11 rounded-lg bg-rose-600/70 text-xl font-bold disabled:opacity-30 active:bg-rose-600"
           >−</button>
           <input

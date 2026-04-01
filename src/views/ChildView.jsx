@@ -42,9 +42,9 @@ export default function ChildView() {
       <div className="flex items-center px-6 py-3 border-b border-white/10 gap-4">
         <div className="flex items-center gap-3 min-w-0 w-48">
           <button onClick={() => setShowSettings(true)} className="shrink-0">
-            <img src={buildAvatarSrc(user.avatar)} alt={user.name} className="w-9 h-9 rounded-full" />
+            <img src={buildAvatarSrc(user.avatar)} alt={user.name} className="w-12 h-12 rounded-full" />
           </button>
-          <span className="font-semibold truncate">{user.nick_name || user.name}</span>
+          <span className="text-lg font-semibold truncate">{user.nick_name || user.name}</span>
           {!isLoading && data && (
             <span className="bg-white/10 px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap">
               {data.points_balance} pts
@@ -57,7 +57,7 @@ export default function ChildView() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors
+              className={`px-5 py-3.5 rounded-lg text-base font-medium transition-colors
                 ${activeTab === tab.id ? 'bg-white/15 text-white' : 'text-white/40 active:text-white/70'}`}
             >
               {tab.label}
