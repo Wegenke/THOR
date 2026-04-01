@@ -48,6 +48,7 @@ export default function ApprovalCard({ assignment }) {
         <div className="flex flex-col gap-2">
           <input
             type="text"
+            inputMode="none"
             value={comment}
             {...commentKb}
             placeholder="Reason for rejection…"

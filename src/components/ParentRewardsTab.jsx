@@ -148,6 +148,7 @@ function PendingCard({ reward, profiles, onSuccess }) {
           >−</button>
           <input
             type="number"
+            inputMode="none"
             value={points}
             {...kbPoints}
             placeholder="Pts"

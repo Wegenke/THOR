@@ -27,11 +27,11 @@ export default function RequestRewardModal({ onClose }) {
       <div className="bg-slate-800 rounded-2xl p-6 w-96 flex flex-col gap-4">
         <h2 className="text-lg font-semibold">Request a Reward</h2>
 
-        <input value={name} {...nameKb}
+        <input inputMode="none" value={name} {...nameKb}
           placeholder="What do you want?"
           className="bg-white/10 rounded-xl px-4 py-2 text-sm outline-none" />
 
-        <textarea value={description} {...descKb}
+        <textarea inputMode="none" value={description} {...descKb}
           placeholder="Any details... (optional)" rows={2}
           className="bg-white/10 rounded-xl px-4 py-2 text-sm outline-none resize-none" />
 

@@ -42,6 +42,7 @@ export default function CommentThread({ assignmentId }) {
       <div className="flex gap-2">
         <input
           type="text"
+          inputMode="none"
           value={text}
           {...textKb}
           placeholder="Add a comment…"

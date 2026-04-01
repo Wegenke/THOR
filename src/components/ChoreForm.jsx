@@ -39,6 +39,7 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
         </button>
         <input
           type="text"
+          inputMode="none"
           value={title}
           {...titleKb}
           className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-sm outline-none placeholder:text-white/30"
@@ -54,6 +55,7 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
           >−</button>
           <input
             type="number"
+            inputMode="none"
             value={points}
             {...pointsKb}
             className="w-16 bg-white/10 rounded-lg px-2 py-2 text-sm outline-none placeholder:text-white/30 text-center appearance-none"
@@ -68,6 +70,7 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
       </div>
       <input
         type="text"
+        inputMode="none"
         value={description}
         {...descKb}
         className="bg-white/10 rounded-lg px-3 py-2 text-sm outline-none placeholder:text-white/30"

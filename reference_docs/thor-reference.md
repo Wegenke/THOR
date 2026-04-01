@@ -34,6 +34,7 @@
 | ChildSummaryCard | Complete |
 | CommentThread | Complete |
 | RewardCard | Complete |
+| MyRewardCard | Removed (unified into RewardCard) |
 | ClaimCard | Complete |
 | RequestRewardModal | Complete |
 | ChoresTab | Complete |

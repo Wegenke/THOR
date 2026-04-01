@@ -74,6 +74,7 @@ export default function ProfileSettingsModal({ onClose }) {
             <label className="text-xs text-white/50">Nickname <span className="text-white/30">(optional)</span></label>
             <input
               type="text"
+              inputMode="none"
               value={nickName}
               {...nickKb}
               className="bg-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-white/30"
@@ -92,7 +93,7 @@ export default function ProfileSettingsModal({ onClose }) {
                 <label className="text-xs text-white/50">New PIN</label>
                 <input
                   type="text"
-                  inputMode="numeric"
+                  inputMode="none"
                   value={newPin}
                   {...newPinKb}
                   minLength={4}
@@ -105,7 +106,7 @@ export default function ProfileSettingsModal({ onClose }) {
                 <label className="text-xs text-white/50">Confirm new PIN</label>
                 <input
                   type="text"
-                  inputMode="numeric"
+                  inputMode="none"
                   value={confirmPin}
                   {...confirmPinKb}
                   minLength={4}

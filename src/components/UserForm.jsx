@@ -93,6 +93,7 @@ export default function UserForm({ user, onClose }) {
             <label className="text-xs text-white/50">Name</label>
             <input
               type="text"
+              inputMode="none"
               value={name}
               {...nameKb}
               required
@@ -105,6 +106,7 @@ export default function UserForm({ user, onClose }) {
             <label className="text-xs text-white/50">Nickname <span className="text-white/30">(optional)</span></label>
             <input
               type="text"
+              inputMode="none"
               value={nickName}
               {...nickNameKb}
               className="bg-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-white/30"
@@ -142,7 +144,7 @@ export default function UserForm({ user, onClose }) {
                   <label className="text-xs text-white/50">New PIN</label>
                   <input
                     type="text"
-                    inputMode="numeric"
+                    inputMode="none"
                     value={pin}
                     {...pinKb}
                     minLength={4}
@@ -158,7 +160,7 @@ export default function UserForm({ user, onClose }) {
               <label className="text-xs text-white/50">PIN</label>
               <input
                 type="text"
-                inputMode="numeric"
+                inputMode="none"
                 value={pin}
                 {...pinKb}
                 required

@@ -258,6 +258,7 @@ function DashRewardCard({ reward, onSuccess }) {
           >−</button>
           <input
             type="number"
+            inputMode="none"
             value={points}
             {...kbPoints}
             placeholder="Pts"

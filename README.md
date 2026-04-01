@@ -84,16 +84,12 @@ src/
     PinPad.jsx          — touch-friendly numeric keypad
     LockoutTimer.jsx    — per-user countdown on 429 lockout
     ChoreCard.jsx       — assignment tile with action buttons
-    ChoreForm.jsx       — create/edit chore modal form
-    ChoreTemplateCard.jsx — chore library card with assign buttons
     ClaimCard.jsx       — available-to-claim assignment tile
     ApprovalCard.jsx    — parent approve/reject UI
     RewardCard.jsx      — reward management tile (parent)
+    MyRewardCard.jsx    — reward progress tile (child)
     ChildSummaryCard.jsx — per-child summary on parent dashboard
     CommentThread.jsx   — assignment comment display
-    EmojiPicker.jsx     — curated emoji grid for chore icons
-    AssignmentRow.jsx   — active assignment row with inline actions
-    UnassignedRow.jsx   — unassigned pool row with assign/cancel
     ChoresTab.jsx       — parent chore library + assignments tab
     HistoryTab.jsx      — child history tab
     ParentHistoryTab.jsx — parent history tab
