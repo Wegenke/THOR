@@ -10,7 +10,7 @@ export default function ChildSummaryCard({ child }) {
   const rejected = counts.rejected || 0
 
   return (
-    <div className="flex flex-col gap-2 bg-white/10 rounded-xl px-4 py-3">
+    <div className="flex flex-col gap-2 bg-white/15 rounded-xl px-4 py-3">
 
       <div className="flex items-center gap-3">
         <img src={avatarSrc} alt={child.name} className="w-10 h-10 rounded-full" />

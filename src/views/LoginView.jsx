@@ -42,7 +42,7 @@ export default function LoginView() {
   )
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-app-gradient text-white">
       {selectedUser ? (
         <PinPad
           user={selectedUser}

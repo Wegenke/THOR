@@ -40,7 +40,7 @@ export default function ParentView() {
   })
 
   return (
-    <div className="h-screen bg-slate-900 text-white flex flex-col">
+    <div className="h-screen bg-app-gradient text-white flex flex-col">
 
       {/* Header */}
       <div className="flex items-center px-6 py-3 border-b border-white/10 gap-4">
@@ -239,7 +239,7 @@ function DashRewardCard({ reward, onSuccess }) {
   const valid = points && Number(points) > 0 && Number(points) % 10 === 0
 
   return (
-    <div className="bg-white/10 rounded-xl p-4 flex flex-col gap-3">
+    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
       <div className="flex flex-col gap-0.5 min-w-0">
         <span className="font-semibold leading-tight truncate">{reward.name}</span>
         {reward.description && (
@@ -313,7 +313,7 @@ function DashUnassignedCard({ assignment, children, onSuccess }) {
   const busy = assign.isPending || cancel.isPending
 
   return (
-    <div className="bg-white/10 rounded-xl p-4 flex flex-col gap-3">
+    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
       <div className="flex items-start gap-3">
         <span className="text-2xl">{assignment.emoji}</span>
         <div className="flex-1 min-w-0">
@@ -357,7 +357,7 @@ function DashRefundCard({ refund, onSuccess }) {
   })
 
   return (
-    <div className="bg-white/10 rounded-xl p-4 flex flex-col gap-3">
+    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
       <div className="flex flex-col gap-0.5 min-w-0">
         <span className="font-semibold leading-tight truncate">{refund.reward_name}</span>
         <span className="text-xs text-white/40">{refund.child_name}</span>

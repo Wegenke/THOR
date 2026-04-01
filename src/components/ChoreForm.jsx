@@ -22,10 +22,10 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
     onSave(data).catch(() => setSaving(false))
   }
 
-  const valid = title.trim() && emoji.trim() && points && Number(points) % 10 === 0
+  const valid = title.trim() && emoji.trim() && points !== '' && Number(points) >= 0 && Number(points) % 10 === 0
 
   return (
-    <div className="bg-white/10 rounded-xl p-4 flex flex-col gap-2">
+    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-2">
       {emojiOpen && (
         <EmojiPicker selected={emoji} onSelect={setEmoji} onClose={() => setEmojiOpen(false)} />
       )}
@@ -49,7 +49,7 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
         <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
-            onClick={() => setPoints(p => String(Math.max(10, (Number(p) || 10) - 10)))}
+            onClick={() => setPoints(p => String(Math.max(0, (Number(p) || 0) - 10)))}
             disabled={!points || Number(points) <= 10}
             className="w-11 h-11 rounded-lg bg-rose-600/70 text-xl font-bold disabled:opacity-30 active:bg-rose-600"
           >−</button>

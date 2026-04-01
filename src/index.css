@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+.bg-app-gradient {
+  background:
+    linear-gradient(135deg, rgba(10,42,42,0.97) 0%, rgba(20,12,20,0.97) 50%, rgba(51,16,5,0.97) 100%),
+    url('/bg-pattern.svg');
+  background-size: auto, 150px 130px;
+  background-attachment: fixed;
+}
+
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }

@@ -121,7 +121,7 @@ function PendingCard({ reward, profiles, onSuccess }) {
   const valid = points && Number(points) > 0 && Number(points) % 10 === 0
 
   return (
-    <div className="bg-white/10 rounded-xl p-4 flex flex-col gap-3">
+    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
 
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-0.5 min-w-0">
@@ -211,7 +211,7 @@ function ActiveCard({ reward, profiles, onSuccess }) {
   })
 
   return (
-    <div className="bg-white/10 rounded-xl p-4 flex flex-col gap-3">
+    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
 
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-0.5 min-w-0">
@@ -269,7 +269,7 @@ function FundedCard({ reward, onSuccess }) {
   })
 
   return (
-    <div className="bg-white/10 rounded-xl p-4 flex flex-col gap-3">
+    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-0.5 min-w-0">
           <span className="font-semibold leading-tight truncate">{reward.name}</span>
@@ -315,7 +315,7 @@ function RefundCard({ refund, onSuccess }) {
   })
 
   return (
-    <div className="bg-white/10 rounded-xl p-4 flex flex-col gap-3">
+    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-0.5 min-w-0">
           <span className="font-semibold leading-tight truncate">{refund.reward_name}</span>
@@ -359,7 +359,7 @@ function RedeemedCard({ reward, onSuccess }) {
   })
 
   return (
-    <div className="bg-white/10 rounded-xl p-4 flex flex-col gap-3">
+    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
       <div className="flex flex-col gap-0.5 min-w-0">
         <span className="font-semibold truncate">{reward.name}</span>
         {reward.description && (

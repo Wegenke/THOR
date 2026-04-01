@@ -34,7 +34,7 @@ export default function RewardCard({ reward, userId, pointsBalance = 0 }) {
   const maxContrib = Math.floor(Math.min(reward.remaining, pointsBalance) / 10) * 10
 
   return (
-    <div className={`bg-white/10 rounded-xl p-4 flex flex-col gap-3 ${!canInteract ? 'opacity-60' : ''}`}>
+    <div className={`bg-white/15 rounded-xl p-4 flex flex-col gap-3 ${!canInteract ? 'opacity-60' : ''}`}>
 
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-0.5 min-w-0">

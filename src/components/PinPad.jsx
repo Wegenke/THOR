@@ -48,7 +48,7 @@ export default function PinPad({ user, onLockout, onBack }) {
 
       {/* Left: user card + dots + back */}
       <div className="flex flex-col items-center gap-5 w-48">
-        <div className="flex flex-col items-center gap-3 p-6 bg-white/10 rounded-2xl w-full">
+        <div className="flex flex-col items-center gap-3 p-6 bg-white/15 rounded-2xl w-full">
           <img src={avatarSrc} alt={user.name} className="w-24 h-24 rounded-full" />
           <span className="text-xl font-semibold">{user.nick_name || user.name}</span>
         </div>
@@ -77,7 +77,7 @@ export default function PinPad({ user, onLockout, onBack }) {
               key="submit"
               onClick={() => handleKey('submit')}
               disabled={pin.length < 4 || submitting}
-              className={`w-20 h-20 rounded-full text-2xl font-medium disabled:opacity-30 transition-colors ${pin.length >= 4 ? 'bg-green-600/80 active:bg-green-600' : 'bg-white/10'
+              className={`w-20 h-20 rounded-full text-2xl font-medium disabled:opacity-30 transition-colors ${pin.length >= 4 ? 'bg-green-600/80 active:bg-green-600' : 'bg-white/20'
                 }`}
             >
               ✓
@@ -88,7 +88,7 @@ export default function PinPad({ user, onLockout, onBack }) {
               key="del"
               onClick={() => handleKey('del')}
               disabled={submitting}
-              className="w-20 h-20 rounded-full bg-white/5 text-orange-300 text-2xl font-medium disabled:opacity-50"
+              className="w-20 h-20 rounded-full bg-white/20 text-orange-300 text-2xl font-medium disabled:opacity-50"
             >
               ⌫
             </button>
@@ -98,7 +98,7 @@ export default function PinPad({ user, onLockout, onBack }) {
               key={key}
               onClick={() => handleKey(key)}
               disabled={submitting}
-              className="w-20 h-20 rounded-full bg-white/10 text-2xl font-medium disabled:opacity-50"
+              className="w-20 h-20 rounded-full bg-white/20 text-2xl font-medium disabled:opacity-50"
             >
               {key}
             </button>

@@ -155,7 +155,7 @@ export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAs
   const hasSchedule = (child_id) => (chore.schedules || []).some(s => s.child_id === child_id)
 
   return (
-    <div className="bg-white/10 rounded-xl p-3 flex flex-col justify-between gap-2">
+    <div className="bg-white/15 rounded-xl p-3 flex flex-col justify-between gap-2">
       <div className="flex items-center justify-between">
         <span className="text-2xl">{chore.emoji}</span>
         <div className="flex items-center gap-2">

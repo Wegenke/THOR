@@ -30,7 +30,7 @@ export default function ApprovalCard({ assignment }) {
 
   return (
     <>
-    <div className="bg-white/10 rounded-xl p-4 flex flex-col gap-3">
+    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
 
       <div className="flex items-center gap-3 px-3">
         <span className="text-2xl">{assignment.emoji}</span>

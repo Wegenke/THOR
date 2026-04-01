@@ -39,7 +39,7 @@ export default function AssignmentRow({ assignment, children }) {
   const canUnassign = ['assigned', 'rejected', 'paused', 'parent_paused'].includes(status)
 
   return (
-    <div className="bg-white/10 rounded-xl px-4 py-3 flex flex-col gap-2">
+    <div className="bg-white/15 rounded-xl px-4 py-3 flex flex-col gap-2">
       <div
         className="flex items-center gap-3 cursor-pointer"
         onClick={() => setExpanded(!expanded)}

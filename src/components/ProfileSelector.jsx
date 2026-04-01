@@ -17,7 +17,7 @@ function ProfileGroup({ label, profiles, onSelect, lockedUsers, onLockoutExpired
                 key={profile.id}
                 onClick={() => onSelect(profile)}
                 disabled={isLocked}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/10 disabled:opacity-50"
+                className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/15 disabled:opacity-50"
               >
                 <img src={avatarSrc} alt={profile.name} className="w-20 h-20" />
                 <span className="text-lg font-medium">{profile.name}</span>

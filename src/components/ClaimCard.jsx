@@ -18,7 +18,7 @@ export default function ClaimCard({ assignment }) {
 
   return (
     <>
-      <div className="bg-white/10 rounded-xl p-4 flex flex-col gap-3">
+      <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2 px-3">
           <button
             className="flex items-center gap-3 text-left active:opacity-70"

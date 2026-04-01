@@ -37,7 +37,7 @@ export default function ChildView() {
   })
 
   return (
-    <div className="h-screen bg-slate-900 text-white flex flex-col">
+    <div className="h-screen bg-app-gradient text-white flex flex-col">
 
       <div className="flex items-center px-6 py-3 border-b border-white/10 gap-4">
         <div className="flex items-center gap-3 min-w-0 w-48">

@@ -42,7 +42,7 @@ export default function HistoryTab() {
   return (
     <div className="flex flex-col gap-2 max-w-lg mx-auto">
       {transactions.map(tx => (
-        <div key={tx.id} className="flex items-center justify-between px-4 py-3 bg-white/10 rounded-xl">
+        <div key={tx.id} className="flex items-center justify-between px-4 py-3 bg-white/15 rounded-xl">
           <div className="flex items-start gap-2 min-w-0">
             <span className="text-base shrink-0">{SOURCE_EMOJI[tx.source]}</span>
             <div className="flex flex-col gap-0.5 min-w-0">

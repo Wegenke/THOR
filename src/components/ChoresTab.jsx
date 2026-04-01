@@ -362,7 +362,7 @@ function ScheduleEditRow({ schedule, childName, onSave, onCancel }) {
   const valid = frequency === 'daily' || (frequency === 'weekly' && dayOfWeek !== null) || (frequency === 'monthly' && dayOfMonth !== null)
 
   return (
-    <div className="bg-white/10 rounded-lg p-3 flex flex-col gap-2">
+    <div className="bg-white/15 rounded-lg p-3 flex flex-col gap-2">
       <div className="text-xs text-white/40">Editing schedule for {childName}</div>
       <div className="flex gap-1">
         {['daily', 'weekly', 'monthly'].map(f => (
