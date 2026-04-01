@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useContext } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { KboardContext } from '../context/KboardContext'
 import { buildAvatarSrc } from '../utils/avatar'
 import { getChores, createChore, updateChore } from '../api/chores'
 import { getAssignments, createAssignment } from '../api/assignments'
@@ -24,6 +25,7 @@ const STATUS_FILTERS = [
 
 export default function ChoresTab() {
   const queryClient = useQueryClient()
+  const kb = useContext(KboardContext)
 
   const { data: chores = [], isLoading: choresLoading } = useQuery({
     queryKey: ['chores'],
@@ -199,8 +201,8 @@ export default function ChoresTab() {
 
       {/* Create Chore Modal */}
       {showCreateForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowCreateForm(false)}>
-          <div className="w-[56rem] bg-slate-800 rounded-2xl p-10" onClick={e => e.stopPropagation()}>
+        <div className={`fixed inset-0 z-50 flex justify-center bg-black/60 ${kb?.visible ? 'items-start pt-8' : 'items-center'}`} onClick={() => setShowCreateForm(false)}>
+          <div className="w-[48rem] bg-slate-800 rounded-2xl p-6" onClick={e => e.stopPropagation()}>
             <ChoreForm
               onSave={(data) => {
                 return createChore(data).then(() => {
@@ -219,8 +221,8 @@ export default function ChoresTab() {
         const chore = chores.find(c => c.id === editingChoreId)
         if (!chore) return null
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setEditingChoreId(null)}>
-            <div className="w-[56rem] bg-slate-800 rounded-2xl p-10" onClick={e => e.stopPropagation()}>
+          <div className={`fixed inset-0 z-50 flex justify-center bg-black/60 ${kb?.visible ? 'items-start pt-8' : 'items-center'}`} onClick={() => setEditingChoreId(null)}>
+            <div className="w-[48rem] bg-slate-800 rounded-2xl p-6" onClick={e => e.stopPropagation()}>
               <ChoreForm
                 initial={chore}
                 onSave={(data) => {
@@ -241,13 +243,13 @@ export default function ChoresTab() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={() => setViewingChore(null)}
         >
-          <div className="bg-slate-800 rounded-2xl p-12 w-[60rem] flex flex-col gap-8" onClick={e => e.stopPropagation()}>
-            <div className="text-6xl">{viewingChore.emoji}</div>
-            <div className="text-3xl font-semibold">{viewingChore.title}</div>
+          <div className="bg-slate-800 rounded-2xl p-10 w-[48rem] flex flex-col gap-5" onClick={e => e.stopPropagation()}>
+            <div className="text-5xl">{viewingChore.emoji}</div>
+            <div className="text-2xl font-semibold">{viewingChore.title}</div>
             {viewingChore.description && (
-              <div className="text-white/60 text-lg">{viewingChore.description}</div>
+              <div className="text-white/60 text-base">{viewingChore.description}</div>
             )}
-            <div className="text-white font-semibold text-xl">{viewingChore.points} pts</div>
+            <div className="text-white font-semibold text-lg">{viewingChore.points} pts</div>
             <ScheduleManager
               schedules={viewingChore.schedules || []}
               children={children}
@@ -293,8 +295,8 @@ function ScheduleManager({ schedules, children, onUpdate, onDelete }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="text-base text-white/40 uppercase tracking-wide">Recurring Schedules</div>
+    <div className="flex flex-col gap-3">
+      <div className="text-sm text-white/40 uppercase tracking-wide">Recurring Schedules</div>
       {schedules.map(s => {
         const child = children.find(c => c.id === s.child_id)
         const isEditing = editingId === s.id
@@ -312,29 +314,29 @@ function ScheduleManager({ schedules, children, onUpdate, onDelete }) {
         }
 
         return (
-          <div key={s.id} className="bg-white/5 rounded-lg px-6 py-6 flex items-center gap-4">
-            {child?.avatar && <img src={buildAvatarSrc(child.avatar)} className="w-10 h-10 rounded-full" />}
-            <span className="text-lg font-medium">{child?.name || '?'}</span>
-            <span className="text-base text-purple-300 bg-purple-600/30 px-4 py-1.5 rounded-full">{formatSchedule(s)}</span>
-            <span className={`text-base px-4 py-1.5 rounded-full ${s.active ? 'bg-green-600/30 text-green-300' : 'bg-white/10 text-white/40'}`}>
+          <div key={s.id} className="bg-white/5 rounded-lg px-5 py-4 flex items-center gap-3">
+            {child?.avatar && <img src={buildAvatarSrc(child.avatar)} className="w-8 h-8 rounded-full" />}
+            <span className="text-base font-medium">{child?.name || '?'}</span>
+            <span className="text-sm text-purple-300 bg-purple-600/30 px-3 py-1 rounded-full">{formatSchedule(s)}</span>
+            <span className={`text-sm px-3 py-1 rounded-full ${s.active ? 'bg-green-600/30 text-green-300' : 'bg-white/10 text-white/40'}`}>
               {s.active ? 'Active' : 'Paused'}
             </span>
             <div className="flex-1" />
             <button
               onClick={() => onUpdate(s.id, { active: !s.active })}
-              className="text-base px-5 py-3.5 rounded-lg bg-white/10 active:bg-white/20"
+              className="text-sm px-4 py-2.5 rounded-lg bg-white/10 active:bg-white/20"
             >
               {s.active ? 'Pause' : 'Resume'}
             </button>
             <button
               onClick={() => setEditingId(s.id)}
-              className="text-base px-5 py-3.5 rounded-lg bg-white/10 active:bg-white/20"
+              className="text-sm px-4 py-2.5 rounded-lg bg-white/10 active:bg-white/20"
             >
               Edit
             </button>
             <button
               onClick={() => onDelete(s.id)}
-              className="text-base px-5 py-3.5 rounded-lg bg-red-600/80 active:bg-red-600"
+              className="text-sm px-4 py-2.5 rounded-lg bg-red-600/80 active:bg-red-600"
             >
               Delete
             </button>
