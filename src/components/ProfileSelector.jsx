@@ -14,7 +14,7 @@ function ProfileRow({ profiles, onSelect, lockedUsers, onLockoutExpired }) {
             disabled={isLocked}
             className="aspect-square h-full max-h-full flex flex-col items-center justify-center gap-3 rounded-full bg-white/15 disabled:opacity-50"
           >
-            <img src={avatarSrc} alt={profile.name} className="w-1/2 h-1/2" />
+            <img src={avatarSrc} alt={profile.name} className="w-1/2 h-1/2 rounded-full" />
             <span className="text-lg font-medium">{profile.name}</span>
             {isLocked && (
               <LockoutTimer
