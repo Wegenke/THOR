@@ -200,7 +200,7 @@ export default function ChoresTab() {
       {/* Create Chore Modal */}
       {showCreateForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setShowCreateForm(false)}>
-          <div className="w-[48rem] bg-slate-800 rounded-2xl p-6" onClick={e => e.stopPropagation()}>
+          <div className="w-[56rem] bg-slate-800 rounded-2xl p-10" onClick={e => e.stopPropagation()}>
             <ChoreForm
               onSave={(data) => {
                 return createChore(data).then(() => {
@@ -220,7 +220,7 @@ export default function ChoresTab() {
         if (!chore) return null
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setEditingChoreId(null)}>
-            <div className="w-[48rem] bg-slate-800 rounded-2xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="w-[56rem] bg-slate-800 rounded-2xl p-10" onClick={e => e.stopPropagation()}>
               <ChoreForm
                 initial={chore}
                 onSave={(data) => {
@@ -241,13 +241,13 @@ export default function ChoresTab() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={() => setViewingChore(null)}
         >
-          <div className="bg-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 flex flex-col gap-3" onClick={e => e.stopPropagation()}>
-            <div className="text-4xl">{viewingChore.emoji}</div>
-            <div className="text-lg font-semibold">{viewingChore.title}</div>
+          <div className="bg-slate-800 rounded-2xl p-10 w-[48rem] flex flex-col gap-5" onClick={e => e.stopPropagation()}>
+            <div className="text-5xl">{viewingChore.emoji}</div>
+            <div className="text-2xl font-semibold">{viewingChore.title}</div>
             {viewingChore.description && (
-              <div className="text-white/60 text-sm">{viewingChore.description}</div>
+              <div className="text-white/60 text-base">{viewingChore.description}</div>
             )}
-            <div className="text-white font-semibold">{viewingChore.points} pts</div>
+            <div className="text-white font-semibold text-lg">{viewingChore.points} pts</div>
             <ScheduleManager
               schedules={viewingChore.schedules || []}
               children={children}
@@ -272,7 +272,7 @@ export default function ChoresTab() {
             />
             <button
               onClick={() => setViewingChore(null)}
-              className="py-2 rounded-lg bg-white/10 text-sm font-medium active:bg-white/20"
+              className="py-4 rounded-lg bg-white/10 text-base font-medium active:bg-white/20"
             >
               Close
             </button>
@@ -293,8 +293,8 @@ function ScheduleManager({ schedules, children, onUpdate, onDelete }) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="text-xs text-white/40 uppercase tracking-wide">Recurring Schedules</div>
+    <div className="flex flex-col gap-3">
+      <div className="text-sm text-white/40 uppercase tracking-wide">Recurring Schedules</div>
       {schedules.map(s => {
         const child = children.find(c => c.id === s.child_id)
         const isEditing = editingId === s.id
@@ -312,29 +312,29 @@ function ScheduleManager({ schedules, children, onUpdate, onDelete }) {
         }
 
         return (
-          <div key={s.id} className="bg-white/5 rounded-lg px-3 py-2 flex items-center gap-2">
-            {child?.avatar && <img src={buildAvatarSrc(child.avatar)} className="w-5 h-5 rounded-full" />}
-            <span className="text-sm font-medium">{child?.name || '?'}</span>
-            <span className="text-xs text-purple-300 bg-purple-600/30 px-2 py-0.5 rounded-full">{formatSchedule(s)}</span>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${s.active ? 'bg-green-600/30 text-green-300' : 'bg-white/10 text-white/40'}`}>
+          <div key={s.id} className="bg-white/5 rounded-lg px-5 py-4 flex items-center gap-3">
+            {child?.avatar && <img src={buildAvatarSrc(child.avatar)} className="w-8 h-8 rounded-full" />}
+            <span className="text-base font-medium">{child?.name || '?'}</span>
+            <span className="text-sm text-purple-300 bg-purple-600/30 px-3 py-1 rounded-full">{formatSchedule(s)}</span>
+            <span className={`text-sm px-3 py-1 rounded-full ${s.active ? 'bg-green-600/30 text-green-300' : 'bg-white/10 text-white/40'}`}>
               {s.active ? 'Active' : 'Paused'}
             </span>
             <div className="flex-1" />
             <button
               onClick={() => onUpdate(s.id, { active: !s.active })}
-              className="text-xs px-2 py-1 rounded-lg bg-white/10 active:bg-white/20"
+              className="text-sm px-4 py-2.5 rounded-lg bg-white/10 active:bg-white/20"
             >
               {s.active ? 'Pause' : 'Resume'}
             </button>
             <button
               onClick={() => setEditingId(s.id)}
-              className="text-xs px-2 py-1 rounded-lg bg-white/10 active:bg-white/20"
+              className="text-sm px-4 py-2.5 rounded-lg bg-white/10 active:bg-white/20"
             >
               Edit
             </button>
             <button
               onClick={() => onDelete(s.id)}
-              className="text-xs px-2 py-1 rounded-lg bg-red-600/80 active:bg-red-600"
+              className="text-sm px-4 py-2.5 rounded-lg bg-red-600/80 active:bg-red-600"
             >
               Delete
             </button>
@@ -362,26 +362,26 @@ function ScheduleEditRow({ schedule, childName, onSave, onCancel }) {
   const valid = frequency === 'daily' || (frequency === 'weekly' && dayOfWeek !== null) || (frequency === 'monthly' && dayOfMonth !== null)
 
   return (
-    <div className="bg-white/15 rounded-lg p-3 flex flex-col gap-2">
-      <div className="text-xs text-white/40">Editing schedule for {childName}</div>
-      <div className="flex gap-1">
+    <div className="bg-white/15 rounded-lg p-5 flex flex-col gap-3">
+      <div className="text-sm text-white/40">Editing schedule for {childName}</div>
+      <div className="flex gap-2">
         {['daily', 'weekly', 'monthly'].map(f => (
           <button
             key={f}
             onClick={() => setFrequency(f)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium ${frequency === f ? 'bg-purple-600 text-white' : 'bg-white/10 active:bg-white/20'}`}
+            className={`px-5 py-3 rounded-lg text-sm font-medium ${frequency === f ? 'bg-purple-600 text-white' : 'bg-white/10 active:bg-white/20'}`}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </button>
         ))}
       </div>
       {frequency === 'weekly' && (
-        <div className="flex gap-1 flex-wrap">
+        <div className="flex gap-2 flex-wrap">
           {DAY_NAMES.map((name, i) => (
             <button
               key={i}
               onClick={() => setDayOfWeek(i)}
-              className={`px-2 py-1 rounded-lg text-xs ${dayOfWeek === i ? 'bg-purple-600 text-white' : 'bg-white/10 active:bg-white/20'}`}
+              className={`px-4 py-2.5 rounded-lg text-sm ${dayOfWeek === i ? 'bg-purple-600 text-white' : 'bg-white/10 active:bg-white/20'}`}
             >
               {name}
             </button>
@@ -389,23 +389,23 @@ function ScheduleEditRow({ schedule, childName, onSave, onCancel }) {
         </div>
       )}
       {frequency === 'monthly' && (
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-2">
           {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
             <button
               key={d}
               onClick={() => setDayOfMonth(d)}
-              className={`py-1 rounded-lg text-xs ${dayOfMonth === d ? 'bg-purple-600 text-white' : 'bg-white/10 active:bg-white/20'}`}
+              className={`py-2.5 rounded-lg text-sm ${dayOfMonth === d ? 'bg-purple-600 text-white' : 'bg-white/10 active:bg-white/20'}`}
             >
               {d}
             </button>
           ))}
         </div>
       )}
-      <div className="flex gap-2">
-        <button onClick={handleSave} disabled={!valid} className="px-3 py-1.5 rounded-lg bg-green-600/80 text-xs font-medium disabled:opacity-40 active:bg-green-600">
+      <div className="flex gap-3">
+        <button onClick={handleSave} disabled={!valid} className="px-5 py-3 rounded-lg bg-green-600/80 text-sm font-medium disabled:opacity-40 active:bg-green-600">
           Save
         </button>
-        <button onClick={onCancel} className="px-3 py-1.5 rounded-lg bg-white/10 text-xs font-medium active:bg-white/20">
+        <button onClick={onCancel} className="px-5 py-3 rounded-lg bg-white/10 text-sm font-medium active:bg-white/20">
           Cancel
         </button>
       </div>

@@ -69,60 +69,60 @@ export default function UserForm({ user, onClose }) {
     <>
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
       onClick={onClose}>
-      <div className="w-96 bg-slate-800 rounded-2xl p-5 flex flex-col gap-4"
+      <div className="w-[36rem] bg-slate-800 rounded-2xl p-10 flex flex-col gap-6"
         onClick={e => e.stopPropagation()}>
 
         <div className="flex items-center justify-between">
-          <span className="font-semibold">{isEdit ? 'Edit User' : 'Add User'}</span>
-          <button onClick={onClose} className="text-white/50 active:text-white/80 text-lg">✕</button>
+          <span className="text-xl font-semibold">{isEdit ? 'Edit User' : 'Add User'}</span>
+          <button onClick={onClose} className="text-white/50 active:text-white/80 text-2xl">✕</button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
           {/* Avatar preview */}
-          <div className="flex flex-col items-center gap-2">
-            <img src={avatarPreviewSrc} alt="avatar preview" className="w-16 h-16 rounded-full bg-white/10" />
+          <div className="flex flex-col items-center gap-3">
+            <img src={avatarPreviewSrc} alt="avatar preview" className="w-24 h-24 rounded-full bg-white/10" />
             <button type="button" onClick={() => setShowCustomizer(true)}
-              className="text-xs text-indigo-400/80 active:text-indigo-300">
+              className="text-sm text-indigo-400/80 active:text-indigo-300">
               Change Avatar
             </button>
           </div>
 
           {/* Name */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-white/50">Name</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm text-white/50">Name</label>
             <input
               type="text"
               inputMode="none"
               value={name}
               {...nameKb}
               required
-              className="bg-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-white/30"
+              className="bg-white/10 rounded-lg px-4 py-3 text-base outline-none focus:ring-1 focus:ring-white/30"
             />
           </div>
 
           {/* Nickname */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-white/50">Nickname <span className="text-white/30">(optional)</span></label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm text-white/50">Nickname <span className="text-white/30">(optional)</span></label>
             <input
               type="text"
               inputMode="none"
               value={nickName}
               {...nickNameKb}
-              className="bg-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-white/30"
+              className="bg-white/10 rounded-lg px-4 py-3 text-base outline-none focus:ring-1 focus:ring-white/30"
             />
           </div>
 
           {/* Role */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-white/50">Role</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm text-white/50">Role</label>
             <div className="flex rounded-lg overflow-hidden bg-white/10">
               {['child', 'parent'].map(r => (
                 <button
                   key={r}
                   type="button"
                   onClick={() => setRole(r)}
-                  className={`flex-1 py-2 text-sm font-medium capitalize transition-colors
+                  className={`flex-1 py-3 text-base font-medium capitalize transition-colors
                     ${role === r ? 'bg-indigo-600 text-white' : 'text-white/50 active:bg-white/10'}`}
                 >
                   {r}
@@ -133,15 +133,15 @@ export default function UserForm({ user, onClose }) {
 
           {/* PIN */}
           {isEdit ? (
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               {!showPin ? (
                 <button type="button" onClick={() => setShowPin(true)}
-                  className="text-sm text-indigo-400/80 active:text-indigo-300 text-left">
+                  className="text-base text-indigo-400/80 active:text-indigo-300 text-left">
                   + Reset PIN
                 </button>
               ) : (
                 <>
-                  <label className="text-xs text-white/50">New PIN</label>
+                  <label className="text-sm text-white/50">New PIN</label>
                   <input
                     type="text"
                     inputMode="none"
@@ -150,14 +150,14 @@ export default function UserForm({ user, onClose }) {
                     minLength={4}
                     maxLength={8}
                     placeholder="4–8 digits"
-                    className="bg-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-white/30"
+                    className="bg-white/10 rounded-lg px-4 py-3 text-base outline-none focus:ring-1 focus:ring-white/30"
                   />
                 </>
               )}
             </div>
           ) : (
-            <div className="flex flex-col gap-1">
-              <label className="text-xs text-white/50">PIN</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm text-white/50">PIN</label>
               <input
                 type="text"
                 inputMode="none"
@@ -167,29 +167,29 @@ export default function UserForm({ user, onClose }) {
                 minLength={4}
                 maxLength={8}
                 placeholder="4–8 digits"
-                className="bg-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-white/30"
+                className="bg-white/10 rounded-lg px-4 py-3 text-base outline-none focus:ring-1 focus:ring-white/30"
               />
             </div>
           )}
 
           {mutation.isError && (
-            <p className="text-xs text-red-400">{mutation.error?.response?.data?.message ?? 'Something went wrong'}</p>
+            <p className="text-sm text-red-400">{mutation.error?.response?.data?.message ?? 'Something went wrong'}</p>
           )}
 
-          <div className="flex gap-2 pt-1">
+          <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl bg-white/10 text-sm font-medium active:bg-white/20">
+              className="flex-1 py-3.5 rounded-xl bg-white/10 text-base font-medium active:bg-white/20">
               Cancel
             </button>
             <button type="submit" disabled={mutation.isPending}
-              className="flex-1 py-2.5 rounded-xl bg-indigo-600/80 text-sm font-medium disabled:opacity-40 active:bg-indigo-600">
+              className="flex-1 py-3.5 rounded-xl bg-indigo-600/80 text-base font-medium disabled:opacity-40 active:bg-indigo-600">
               {isEdit ? 'Save' : 'Create'}
             </button>
           </div>
 
           {canDeactivate && (
             <button type="button" onClick={() => setConfirmDeactivate(true)}
-              className="w-full py-2 rounded-xl text-sm text-red-400/60 active:text-red-400">
+              className="w-full py-3 rounded-xl text-base text-red-400/60 active:text-red-400">
               Deactivate User
             </button>
           )}
