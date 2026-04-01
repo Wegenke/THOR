@@ -44,40 +44,40 @@ export default function PinPad({ user, onLockout, onBack }) {
   }
 
   return (
-    <div className="flex gap-28 items-center">
+    <div className="flex gap-24 items-center">
 
       {/* Left: user card + dots + back */}
-      <div className="flex flex-col items-center gap-10 w-96">
-        <div className="flex flex-col items-center gap-6 p-12 bg-white/15 rounded-3xl w-full">
-          <img src={avatarSrc} alt={user.name} className="w-48 h-48 rounded-full" />
-          <span className="text-4xl font-semibold">{user.nick_name || user.name}</span>
+      <div className="flex flex-col items-center gap-8 w-80">
+        <div className="flex flex-col items-center gap-5 p-10 bg-white/15 rounded-3xl w-full">
+          <img src={avatarSrc} alt={user.name} className="w-40 h-40 rounded-full" />
+          <span className="text-3xl font-semibold">{user.nick_name || user.name}</span>
         </div>
 
-        <div className="flex gap-4 h-7 items-center">
+        <div className="flex gap-4 h-6 items-center">
           {Array.from({ length: pin.length }, (_, i) => (
-            <div key={i} className="w-6 h-6 rounded-full bg-white" />
+            <div key={i} className="w-5 h-5 rounded-full bg-white" />
           ))}
         </div>
 
-        {error && <div className="text-red-400 text-xl">{error}</div>}
+        {error && <div className="text-red-400 text-lg">{error}</div>}
 
         <button
           onClick={onBack}
-          className="w-full py-5 rounded-xl bg-red-950/60 text-red-400 text-xl font-medium active:bg-red-900/60"
+          className="w-full py-4 rounded-xl bg-red-950/60 text-red-400 text-lg font-medium active:bg-red-900/60"
         >
           Back
         </button>
       </div>
 
       {/* Right: keypad */}
-      <div className="grid grid-cols-3 gap-7">
+      <div className="grid grid-cols-3 gap-6">
         {KEYS.map((key) => {
           if (key === 'submit') return (
             <button
               key="submit"
               onClick={() => handleKey('submit')}
               disabled={pin.length < 4 || submitting}
-              className={`w-44 h-44 rounded-full text-5xl font-medium disabled:opacity-30 transition-colors ${pin.length >= 4 ? 'bg-green-600/80 active:bg-green-600' : 'bg-white/20'
+              className={`w-36 h-36 rounded-full text-4xl font-medium disabled:opacity-30 transition-colors ${pin.length >= 4 ? 'bg-green-600/80 active:bg-green-600' : 'bg-white/20'
                 }`}
             >
               ✓
@@ -88,7 +88,7 @@ export default function PinPad({ user, onLockout, onBack }) {
               key="del"
               onClick={() => handleKey('del')}
               disabled={submitting}
-              className="w-44 h-44 rounded-full bg-white/20 text-orange-300 text-5xl font-medium disabled:opacity-50"
+              className="w-36 h-36 rounded-full bg-white/20 text-orange-300 text-4xl font-medium disabled:opacity-50"
             >
               ⌫
             </button>
@@ -98,7 +98,7 @@ export default function PinPad({ user, onLockout, onBack }) {
               key={key}
               onClick={() => handleKey(key)}
               disabled={submitting}
-              className="w-44 h-44 rounded-full bg-white/20 text-5xl font-medium disabled:opacity-50"
+              className="w-36 h-36 rounded-full bg-white/20 text-4xl font-medium disabled:opacity-50"
             >
               {key}
             </button>
