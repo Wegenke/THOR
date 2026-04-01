@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { buildAvatarSrc } from '../utils/avatar'
 import { createUser, updateUser, deleteUser } from '../api/users'
+import { useAuth } from '../context/AuthContext'
 import { useKboard } from '../hooks/useKboard'
 import AvatarCustomizerModal from './AvatarCustomizerModal'
 
 export default function UserForm({ user, onClose }) {
   const isEdit = !!user
   const queryClient = useQueryClient()
+  const { user: me, updateUser: updateAuthUser } = useAuth()
 
   const [avatar, setAvatar] = useState(user?.avatar ?? { style: 'pixel-art', seed: Math.random().toString(36).slice(2, 10) })
   const [showCustomizer, setShowCustomizer] = useState(false)
@@ -37,9 +39,12 @@ export default function UserForm({ user, onClose }) {
 
   const mutation = useMutation({
     mutationFn: (data) => isEdit ? updateUser(user.id, data) : createUser(data),
-    onSuccess: () => {
+    onSuccess: (_, submittedData) => {
       queryClient.invalidateQueries({ queryKey: ['users'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard', 'parent'] })
+      if (isEdit && user.id === me.id) {
+        updateAuthUser(submittedData)
+      }
       onClose()
     }
   })
