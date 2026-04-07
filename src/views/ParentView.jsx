@@ -14,9 +14,11 @@ import ChoresTab from '../components/ChoresTab'
 import ParentHistoryTab from '../components/ParentHistoryTab'
 import ParentUsersTab from '../components/ParentUsersTab'
 import ParentRewardsTab from '../components/ParentRewardsTab'
+import ParentToDoTab from '../components/ParentToDoTab'
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard' },
+  { id: 'todo', label: 'ToDo' },
   { id: 'rewards', label: 'Rewards' },
   { id: 'chores', label: 'Chores' },
   { id: 'history', label: 'History' },
@@ -80,6 +82,7 @@ export default function ParentView() {
       <div className="relative flex-1 min-h-0">
         <div className="h-full overflow-y-auto scrollbar-hide p-4" {...swipeHandlers}>
           {activeTab === 'dashboard' && <DashboardTab data={data} isLoading={isLoading} />}
+          {activeTab === 'todo' && <ParentToDoTab />}
           {activeTab === 'rewards' && <ParentRewardsTab />}
           {activeTab === 'chores' && <ChoresTab />}
           {activeTab === 'history' && <ParentHistoryTab />}

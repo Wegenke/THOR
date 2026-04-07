@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { buildAvatarSrc } from '../utils/avatar'
 import { login } from '../api/auth'
 import { useAuth } from '../context/AuthContext'
@@ -12,6 +12,23 @@ export default function PinPad({ user, onLockout, onBack }) {
   const [submitting, setSubmitting] = useState(false)
 
   const avatarSrc = buildAvatarSrc(user.avatar)
+  const activeKeyRef = useRef(null)
+
+  const handlePointerDown = (key, e) => {
+    if (submitting) return
+    activeKeyRef.current = key
+    e.target.setPointerCapture(e.pointerId)
+  }
+
+  const handlePointerUp = (key) => {
+    if (submitting || activeKeyRef.current !== key) return
+    activeKeyRef.current = null
+    handleKey(key)
+  }
+
+  const handlePointerCancel = () => {
+    activeKeyRef.current = null
+  }
 
   const handleKey = (key) => {
     if (submitting) return
@@ -75,7 +92,9 @@ export default function PinPad({ user, onLockout, onBack }) {
           if (key === 'submit') return (
             <button
               key="submit"
-              onPointerUp={() => handleKey('submit')}
+              onPointerDown={(e) => handlePointerDown('submit', e)}
+              onPointerUp={() => handlePointerUp('submit')}
+              onPointerCancel={handlePointerCancel}
               disabled={pin.length < 4 || submitting}
               className={`w-36 h-36 rounded-full text-4xl font-medium disabled:opacity-30 transition-colors ${pin.length >= 4 ? 'bg-green-600/80 active:bg-green-600' : 'bg-white/20'
                 }`}
@@ -86,7 +105,9 @@ export default function PinPad({ user, onLockout, onBack }) {
           if (key === 'del') return (
             <button
               key="del"
-              onPointerUp={() => handleKey('del')}
+              onPointerDown={(e) => handlePointerDown('del', e)}
+              onPointerUp={() => handlePointerUp('del')}
+              onPointerCancel={handlePointerCancel}
               disabled={submitting}
               className="w-36 h-36 rounded-full bg-white/20 text-orange-300 text-4xl font-medium disabled:opacity-50"
             >
@@ -96,7 +117,9 @@ export default function PinPad({ user, onLockout, onBack }) {
           return (
             <button
               key={key}
-              onPointerUp={() => handleKey(key)}
+              onPointerDown={(e) => handlePointerDown(key, e)}
+              onPointerUp={() => handlePointerUp(key)}
+              onPointerCancel={handlePointerCancel}
               disabled={submitting}
               className="w-36 h-36 rounded-full bg-white/20 text-4xl font-medium disabled:opacity-50"
             >
