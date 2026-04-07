@@ -19,30 +19,78 @@ function ordinal(n) {
   return 'th'
 }
 
-function ScheduleBadges({ schedules, children }) {
-  if (!schedules || schedules.length === 0) return null
-  const grouped = {}
-  schedules.forEach(s => {
-    const label = formatSchedule(s)
-    if (!grouped[label]) grouped[label] = []
-    const child = children.find(c => c.id === s.child_id)
-    grouped[label].push(child?.name || '?')
-  })
-  return (
-    <div className="flex flex-wrap gap-1">
-      {Object.entries(grouped).map(([label, names]) => (
-        <span key={label} className="text-xs bg-purple-600/30 text-purple-200 px-2 py-0.5 rounded-full">
-          {label}: {names.join(', ')}
-        </span>
-      ))}
-    </div>
-  )
+function getChildFrequency(schedules, child_id) {
+  const childSchedules = (schedules || []).filter(s => s.child_id === child_id)
+  if (childSchedules.length === 0) return null
+  return childSchedules[0].frequency
 }
 
-function RecurrencePrompt({ childName, onOneTime, onRecurring, onCancel }) {
+function RecurrencePrompt({ childName, existingSchedules, onOneTime, onRecurring, onDeleteSchedule, onDone, onCancel }) {
   const [step, setStep] = useState('choose')
-  const [dayOfWeek, setDayOfWeek] = useState(null)
-  const [dayOfMonth, setDayOfMonth] = useState(null)
+
+  // Pre-populate from existing schedules
+  const existingWeekDays = new Set(existingSchedules.filter(s => s.frequency === 'weekly').map(s => s.day_of_week))
+  const existingMonthDates = new Set(existingSchedules.filter(s => s.frequency === 'monthly').map(s => s.day_of_month))
+  const hasDaily = existingSchedules.some(s => s.frequency === 'daily')
+
+  const [daysOfWeek, setDaysOfWeek] = useState(existingWeekDays)
+  const [daysOfMonth, setDaysOfMonth] = useState(existingMonthDates)
+
+  const toggleDay = (day) => setDaysOfWeek(prev => {
+    const next = new Set(prev)
+    next.has(day) ? next.delete(day) : next.add(day)
+    return next
+  })
+
+  const toggleDate = (date) => setDaysOfMonth(prev => {
+    const next = new Set(prev)
+    next.has(date) ? next.delete(date) : next.add(date)
+    return next
+  })
+
+  const handleWeeklyConfirm = () => {
+    // Delete removed days
+    for (const s of existingSchedules) {
+      if (s.frequency === 'weekly' && !daysOfWeek.has(s.day_of_week)) {
+        onDeleteSchedule(s.id)
+      }
+    }
+    // Add new days
+    for (const day of daysOfWeek) {
+      if (!existingWeekDays.has(day)) {
+        onRecurring('weekly', day)
+      }
+    }
+    onDone()
+  }
+
+  const handleMonthlyConfirm = () => {
+    // Delete removed dates
+    for (const s of existingSchedules) {
+      if (s.frequency === 'monthly' && !daysOfMonth.has(s.day_of_month)) {
+        onDeleteSchedule(s.id)
+      }
+    }
+    // Add new dates
+    for (const date of daysOfMonth) {
+      if (!existingMonthDates.has(date)) {
+        onRecurring('monthly', undefined, date)
+      }
+    }
+    onDone()
+  }
+
+  const weeklyChanged = (() => {
+    if (daysOfWeek.size !== existingWeekDays.size) return true
+    for (const d of daysOfWeek) if (!existingWeekDays.has(d)) return true
+    return false
+  })()
+
+  const monthlyChanged = (() => {
+    if (daysOfMonth.size !== existingMonthDates.size) return true
+    for (const d of daysOfMonth) if (!existingMonthDates.has(d)) return true
+    return false
+  })()
 
   if (step === 'choose') {
     return (
@@ -52,14 +100,21 @@ function RecurrencePrompt({ childName, onOneTime, onRecurring, onCancel }) {
           <button onClick={onOneTime} className="px-3 py-2 rounded-lg bg-blue-600/80 text-xs font-medium active:bg-blue-600">
             One-time
           </button>
-          <button onClick={() => onRecurring('daily')} className="px-3 py-2 rounded-lg bg-purple-600/80 text-xs font-medium active:bg-purple-600">
-            Daily
+          {!hasDaily && (
+            <button onClick={() => { onRecurring('daily'); onDone() }} className="px-3 py-2 rounded-lg bg-purple-600/80 text-xs font-medium active:bg-purple-600">
+              Daily
+            </button>
+          )}
+          {hasDaily && (
+            <span className="px-3 py-2 rounded-lg bg-purple-600/40 text-xs font-medium text-purple-200 opacity-60">
+              Daily ✓
+            </span>
+          )}
+          <button onClick={() => setStep('weekly')} className={`px-3 py-2 rounded-lg text-xs font-medium ${existingWeekDays.size > 0 ? 'bg-purple-600 text-white' : 'bg-purple-600/80 active:bg-purple-600'}`}>
+            Weekly {existingWeekDays.size > 0 && `(${existingWeekDays.size})`}
           </button>
-          <button onClick={() => setStep('weekly')} className="px-3 py-2 rounded-lg bg-purple-600/80 text-xs font-medium active:bg-purple-600">
-            Weekly
-          </button>
-          <button onClick={() => setStep('monthly')} className="px-3 py-2 rounded-lg bg-purple-600/80 text-xs font-medium active:bg-purple-600">
-            Monthly
+          <button onClick={() => setStep('monthly')} className={`px-3 py-2 rounded-lg text-xs font-medium ${existingMonthDates.size > 0 ? 'bg-purple-600 text-white' : 'bg-purple-600/80 active:bg-purple-600'}`}>
+            Monthly {existingMonthDates.size > 0 && `(${existingMonthDates.size})`}
           </button>
           <button onClick={onCancel} className="px-3 py-2 rounded-lg bg-white/10 text-xs font-medium active:bg-white/20">
             Cancel
@@ -72,22 +127,27 @@ function RecurrencePrompt({ childName, onOneTime, onRecurring, onCancel }) {
   if (step === 'weekly') {
     return (
       <div className="bg-slate-700 rounded-xl p-3 flex flex-col gap-2 border border-white/10">
-        <div className="text-xs text-white/40 uppercase tracking-wide">Pick a day for {childName}</div>
+        <div className="text-xs text-white/40 uppercase tracking-wide">Pick days for {childName}</div>
         <div className="flex gap-1 flex-wrap">
           {DAY_NAMES.map((name, i) => (
             <button
               key={i}
-              onClick={() => setDayOfWeek(i)}
-              className={`px-3 py-2 rounded-lg text-xs font-medium ${dayOfWeek === i ? 'bg-purple-600 text-white' : 'bg-white/10 active:bg-white/20'}`}
+              onClick={() => toggleDay(i)}
+              className={`px-3 py-2 rounded-lg text-xs font-medium ${daysOfWeek.has(i) ? 'bg-purple-600 text-white' : 'bg-white/10 active:bg-white/20'}`}
             >
               {name}
             </button>
           ))}
         </div>
+        {daysOfWeek.size > 0 && (
+          <div className="text-xs text-white/30">
+            {[...daysOfWeek].sort().map(d => DAY_NAMES[d]).join(', ')}
+          </div>
+        )}
         <div className="flex gap-2">
           <button
-            onClick={() => onRecurring('weekly', dayOfWeek)}
-            disabled={dayOfWeek === null}
+            onClick={handleWeeklyConfirm}
+            disabled={!weeklyChanged}
             className="px-3 py-2 rounded-lg bg-purple-600/80 text-xs font-medium disabled:opacity-40 active:bg-purple-600"
           >
             Confirm
@@ -103,22 +163,27 @@ function RecurrencePrompt({ childName, onOneTime, onRecurring, onCancel }) {
   if (step === 'monthly') {
     return (
       <div className="bg-slate-700 rounded-xl p-3 flex flex-col gap-2 border border-white/10">
-        <div className="text-xs text-white/40 uppercase tracking-wide">Pick a date for {childName} (1-28)</div>
+        <div className="text-xs text-white/40 uppercase tracking-wide">Pick dates for {childName} (1-28)</div>
         <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: 28 }, (_, i) => i + 1).map(d => (
             <button
               key={d}
-              onClick={() => setDayOfMonth(d)}
-              className={`py-1.5 rounded-lg text-xs font-medium ${dayOfMonth === d ? 'bg-purple-600 text-white' : 'bg-white/10 active:bg-white/20'}`}
+              onClick={() => toggleDate(d)}
+              className={`py-1.5 rounded-lg text-xs font-medium ${daysOfMonth.has(d) ? 'bg-purple-600 text-white' : 'bg-white/10 active:bg-white/20'}`}
             >
               {d}
             </button>
           ))}
         </div>
+        {daysOfMonth.size > 0 && (
+          <div className="text-xs text-white/30">
+            {[...daysOfMonth].sort((a, b) => a - b).join(', ')}
+          </div>
+        )}
         <div className="flex gap-2">
           <button
-            onClick={() => onRecurring('monthly', undefined, dayOfMonth)}
-            disabled={dayOfMonth === null}
+            onClick={handleMonthlyConfirm}
+            disabled={!monthlyChanged}
             className="px-3 py-2 rounded-lg bg-purple-600/80 text-xs font-medium disabled:opacity-40 active:bg-purple-600"
           >
             Confirm
@@ -132,7 +197,7 @@ function RecurrencePrompt({ childName, onOneTime, onRecurring, onCancel }) {
   }
 }
 
-export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAssign, onSchedule }) {
+export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAssign, onSchedule, onDeleteSchedule }) {
   const [cooldowns, setCooldowns] = useState(new Set())
   const [promptChild, setPromptChild] = useState(null)
   const cardRef = useRef(null)
@@ -150,9 +215,12 @@ export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAs
   }
 
   const handleRecurring = (child_id, frequency, day_of_week, day_of_month) => {
+    onSchedule(chore.id, child_id, frequency, day_of_week, day_of_month)
+  }
+
+  const finishRecurring = (child_id) => {
     const key = child_id
     setCooldowns(prev => new Set(prev).add(key))
-    onSchedule(chore.id, child_id, frequency, day_of_week, day_of_month)
     setPromptChild(null)
     setTimeout(() => setCooldowns(prev => { const next = new Set(prev); next.delete(key); return next }), 2000)
   }
@@ -160,37 +228,49 @@ export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAs
   const hasSchedule = (child_id) => (chore.schedules || []).some(s => s.child_id === child_id)
 
   return (
-    <div ref={cardRef} className="bg-white/15 rounded-xl p-3 flex flex-col justify-between gap-2">
-      <div className="flex items-center justify-between">
-        <span className="text-2xl">{chore.emoji}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-white font-semibold text-sm whitespace-nowrap">{chore.points} pts</span>
-          <button onClick={onEdit} className="text-white/50 active:text-white/80 text-xl leading-none">⚙</button>
+    <div ref={cardRef} className="bg-white/15 rounded-xl p-3 flex flex-col h-full">
+      <div className="flex items-start justify-between flex-[55] min-h-0">
+        <div className="flex items-start gap-2 min-w-0 flex-1" onClick={onTap}>
+          <span className="text-4xl shrink-0">{chore.emoji}</span>
+          <div className="min-w-0">
+            <div className="font-semibold text-xl leading-tight">{chore.title}</div>
+            {chore.description && (
+              <div className="text-white/40 text-base mt-1 truncate">{chore.description}</div>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="text-white font-semibold text-lg whitespace-nowrap">{chore.points} pts</span>
+            <button onClick={onEdit} className="text-white/50 active:text-white/80 text-2xl leading-none">⚙</button>
+          </div>
+          <div className="flex flex-wrap gap-1 justify-end">
+            {children.map(child => {
+              const freq = getChildFrequency(chore.schedules, child.id)
+              if (!freq) return null
+              return (
+                <span key={child.id} className="text-xs bg-purple-600/30 text-purple-200 px-2 py-0.5 rounded-full">
+                  {child.name}: {freq.charAt(0).toUpperCase() + freq.slice(1)}
+                </span>
+              )
+            })}
+          </div>
         </div>
       </div>
 
-      <div onClick={onTap} className="cursor-pointer">
-        <div className="font-semibold leading-tight">{chore.title}</div>
-        {chore.description && (
-          <div className="text-white/40 text-sm mt-0.5 truncate">{chore.description}</div>
-        )}
-      </div>
-
-      <ScheduleBadges schedules={chore.schedules} children={children} />
-
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-[45]">
         {children.map(child => {
           const on = cooldowns.has(child.id)
           const scheduled = hasSchedule(child.id)
           return (
             <button
               key={child.id}
-              onClick={() => scheduled ? handleOneTime(child.id) : setPromptChild(child)}
+              onClick={() => setPromptChild(child)}
               disabled={on}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 ${on ? 'bg-green-600/80 opacity-60' : scheduled ? 'bg-purple-600/80 active:bg-purple-600' : 'bg-blue-600/80 active:bg-blue-600'}`}
+              className={`flex-1 rounded-lg text-base font-medium flex items-center justify-center gap-2 ${on ? 'bg-green-600/80 opacity-60' : scheduled ? 'bg-purple-600/80 active:bg-purple-600' : 'bg-blue-600/80 active:bg-blue-600'}`}
             >
               {on ? '✓' : <>
-                {child.avatar && <img src={buildAvatarSrc(child.avatar)} className="w-5 h-5 rounded-full" />}
+                {child.avatar && <img src={buildAvatarSrc(child.avatar)} className="w-7 h-7 rounded-full" />}
                 {child.name}
               </>}
             </button>
@@ -202,7 +282,7 @@ export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAs
             <button
               onClick={() => handleOneTime(null)}
               disabled={on}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium ${on ? 'bg-green-600/80 opacity-60' : 'bg-white/10 active:bg-white/20'}`}
+              className={`flex-1 rounded-lg text-base font-medium ${on ? 'bg-green-600/80 opacity-60' : 'bg-white/10 active:bg-white/20'}`}
             >
               {on ? '✓' : 'Pool'}
             </button>
@@ -213,8 +293,11 @@ export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAs
       {promptChild && (
         <RecurrencePrompt
           childName={promptChild.name}
+          existingSchedules={(chore.schedules || []).filter(s => s.child_id === promptChild.id)}
           onOneTime={() => handleOneTime(promptChild.id)}
           onRecurring={(freq, dow, dom) => handleRecurring(promptChild.id, freq, dow, dom)}
+          onDeleteSchedule={onDeleteSchedule}
+          onDone={() => finishRecurring(promptChild.id)}
           onCancel={() => setPromptChild(null)}
         />
       )}

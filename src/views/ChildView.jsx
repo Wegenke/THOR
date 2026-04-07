@@ -17,7 +17,7 @@ import UnseenAdjustmentsModal from '../components/UnseenAdjustmentsModal'
 const TABS = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'chores', label: 'My Chores' },
-  { id: 'claim', label: 'Claim' },
+  { id: 'claim', label: 'Chore Pool' },
   { id: 'rewards', label: 'Rewards' },
   { id: 'history', label: 'History' }
 ]
@@ -39,10 +39,12 @@ export default function ChildView() {
   })
   const [adjustmentsDismissed, setAdjustmentsDismissed] = useState(false)
 
+  const hasRejected = activeTab === 'chores' && (data?.assignments ?? []).some(a => a.status === 'rejected')
+
   const currentIndex = TAB_IDS.indexOf(activeTab)
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: (e) => { if (e.event.target.closest?.('[data-no-swipe]')) return; if (currentIndex < TAB_IDS.length - 1) setActiveTab(TAB_IDS[currentIndex + 1]) },
-    onSwipedRight: (e) => { if (e.event.target.closest?.('[data-no-swipe]')) return; if (currentIndex > 0) setActiveTab(TAB_IDS[currentIndex - 1]) },
+    onSwipedLeft: (e) => { if (hasRejected) return; if (e.event.target.closest?.('[data-no-swipe]')) return; if (currentIndex < TAB_IDS.length - 1) setActiveTab(TAB_IDS[currentIndex + 1]) },
+    onSwipedRight: (e) => { if (hasRejected) return; if (e.event.target.closest?.('[data-no-swipe]')) return; if (currentIndex > 0) setActiveTab(TAB_IDS[currentIndex - 1]) },
     trackTouch: true,
     delta: 50
   })
@@ -67,7 +69,7 @@ export default function ChildView() {
           {TABS.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => { if (hasRejected && tab.id !== 'chores') return; setActiveTab(tab.id) }}
               className={`px-5 py-3.5 rounded-lg text-base font-medium transition-colors
                 ${activeTab === tab.id ? 'bg-white/15 text-white' : 'text-white/40 active:text-white/70'}`}
             >

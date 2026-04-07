@@ -37,10 +37,19 @@ function formatRecurrence(frequency, day_of_week, day_of_month) {
 export default function ChoreCard({ assignment }) {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['dashboard', 'child'] })
-  const [showComments, setShowComments] = useState(assignment.status === 'rejected')
+  const isRejected = assignment.status === 'rejected'
+  const [showComments, setShowComments] = useState(isRejected)
+  const [rejectedReady, setRejectedReady] = useState(false)
   useEffect(() => {
-    if (assignment.status === 'rejected') setShowComments(true)
-  }, [assignment.status])
+    if (isRejected) setShowComments(true)
+  }, [isRejected])
+  useEffect(() => {
+    if (showComments && isRejected) {
+      setRejectedReady(false)
+      const timer = setTimeout(() => setRejectedReady(true), 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [showComments, isRejected])
 
   const start = useMutation({ mutationFn: () => startAssignment(assignment.id), onSuccess: invalidate })
   const submit = useMutation({ mutationFn: () => submitAssignment(assignment.id), onSuccess: invalidate })
@@ -152,13 +161,24 @@ export default function ChoreCard({ assignment }) {
 
       {showComments && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-          onClick={() => setShowComments(false)}>
+          onClick={isRejected ? undefined : () => setShowComments(false)}>
           <div className="w-[36rem] bg-slate-800 rounded-2xl p-5 flex flex-col gap-3"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <span className="font-semibold">{chore_title}</span>
-              <button onClick={() => setShowComments(false)} className="text-white/50 active:text-white/80 text-lg">✕</button>
+              {isRejected ? (
+                <button
+                  onClick={() => setShowComments(false)}
+                  disabled={!rejectedReady}
+                  className={`text-lg transition-opacity ${rejectedReady ? 'text-white/50 active:text-white/80' : 'opacity-0'}`}
+                >✕</button>
+              ) : (
+                <button onClick={() => setShowComments(false)} className="text-white/50 active:text-white/80 text-lg">✕</button>
+              )}
             </div>
+            {isRejected && (
+              <div className="text-xs text-red-400 uppercase tracking-wider font-medium">Rejected — review comments below</div>
+            )}
             <CommentThread assignmentId={assignment.id} />
           </div>
         </div>

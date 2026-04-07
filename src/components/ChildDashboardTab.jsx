@@ -32,7 +32,7 @@ function EmptyCard() {
     <div className="flex-1 flex items-center justify-center rounded-xl" style={{ background: 'linear-gradient(to bottom left, rgba(20,184,166,0.15), rgba(255,255,255,0.08), rgba(168,85,247,0.15))' }}>
       <div className="flex flex-col items-center gap-4 h-[80%] justify-center">
         <div className="text-xl text-amber-400 uppercase tracking-widest font-bold">ALL CAUGHT UP</div>
-        <span className="text-[8rem] leading-none animate-spin-slow">⭐</span>
+        <span className="text-[8rem] leading-none animate-spin-slow">🥳</span>
         <div className="text-xl text-amber-400 uppercase tracking-widest font-bold">GREAT WORK</div>
       </div>
     </div>
@@ -94,10 +94,10 @@ export default function ChildDashboardTab() {
           <TodaySection assignments={today} />
         </div>
         <div className="flex-1 flex flex-col min-h-0">
-          <WeekSection assignments={thisWeek} />
+          <WeekSection schedules={thisWeek} />
         </div>
         <div className="flex-1 flex flex-col min-h-0">
-          <MonthSection assignments={thisMonth} />
+          <MonthSection schedules={thisMonth} />
         </div>
       </div>
     </div>
@@ -177,17 +177,17 @@ function TodaySection({ assignments }) {
 
 // ─── This Week Section ───────────────────────────────────────────────────────
 
-function WeekSection({ assignments }) {
+function WeekSection({ schedules }) {
   return (
     <section className="flex flex-col gap-2 min-h-0 flex-1">
       <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1 shrink-0">
-        📅 This Week ({assignments.length})
+        📅 This Week ({schedules.length})
       </h2>
-      {assignments.length === 0 ? (
+      {schedules.length === 0 ? (
         <EmptyCard />
       ) : (
         <ScrollFade className="flex flex-col gap-3 overflow-y-auto scrollbar-hide h-full">
-          {assignments.map(a => <SummaryCard key={a.id} assignment={a} />)}
+          {schedules.map(s => <ScheduleCard key={s.id} schedule={s} />)}
         </ScrollFade>
       )}
     </section>
@@ -197,17 +197,17 @@ function WeekSection({ assignments }) {
 
 // ─── This Month Section ──────────────────────────────────────────────────────
 
-function MonthSection({ assignments }) {
+function MonthSection({ schedules }) {
   return (
     <section className="flex flex-col gap-2 min-h-0 flex-1">
       <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1 shrink-0">
-        📆 This Month ({assignments.length})
+        📆 This Month ({schedules.length})
       </h2>
-      {assignments.length === 0 ? (
+      {schedules.length === 0 ? (
         <EmptyCard />
       ) : (
         <ScrollFade className="flex flex-col gap-3 overflow-y-auto scrollbar-hide h-full">
-          {assignments.map(a => <SummaryCard key={a.id} assignment={a} />)}
+          {schedules.map(s => <ScheduleCard key={s.id} schedule={s} />)}
         </ScrollFade>
       )}
     </section>
@@ -215,7 +215,26 @@ function MonthSection({ assignments }) {
 }
 
 
-// ─── Summary Card (shared for today/week/month) ─────────────────────────────
+// ─── Schedule Card (for week/month preview) ─────────────────────────────────
+
+function ScheduleCard({ schedule }) {
+  const { chore_title, emoji, points, frequency, day_of_week, day_of_month } = schedule
+  const recurrence = formatRecurrence(frequency, day_of_week, day_of_month)
+
+  return (
+    <div className="bg-white/10 rounded-xl p-4 flex items-center gap-3">
+      <span className="text-2xl">{emoji}</span>
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold text-sm truncate">{chore_title}</div>
+        {recurrence && <div className="text-xs text-white/40 mt-0.5">🔁 {recurrence}</div>}
+      </div>
+      <span className="text-sm font-semibold text-white/70 shrink-0">{points} pts</span>
+    </div>
+  )
+}
+
+
+// ─── Summary Card (for today's assignments) ─────────────────────────────────
 
 function SummaryCard({ assignment }) {
   const { chore_title, emoji, points, status, frequency, day_of_week, day_of_month } = assignment

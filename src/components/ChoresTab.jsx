@@ -111,6 +111,11 @@ export default function ChoresTab() {
                       queryClient.invalidateQueries({ queryKey: ['assignments'] })
                     })
                   }}
+                  onDeleteSchedule={(id) => {
+                    apiDeleteSchedule(id).then(() => {
+                      queryClient.invalidateQueries({ queryKey: ['chores'] })
+                    })
+                  }}
                 />
               ))}
             </div>
@@ -177,7 +182,7 @@ export default function ChoresTab() {
         </div>
 
         {/* Unassigned Pool */}
-        <div className="flex flex-col gap-3 min-h-0 flex-1 max-h-52">
+        <div className="flex flex-col gap-3 min-h-0 flex-1 max-h-60">
           <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1 shrink-0">
             Unassigned Pool {unassigned.length > 0 && `(${unassigned.length})`}
           </h2>
