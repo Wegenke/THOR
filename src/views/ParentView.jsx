@@ -36,7 +36,8 @@ export default function ParentView() {
   const swipeHandlers = useSwipeable({
     onSwipedLeft: (e) => { if (e.event.target.closest?.('[data-no-swipe]')) return; if (currentIndex < TAB_IDS.length - 1) setActiveTab(TAB_IDS[currentIndex + 1]) },
     onSwipedRight: (e) => { if (e.event.target.closest?.('[data-no-swipe]')) return; if (currentIndex > 0) setActiveTab(TAB_IDS[currentIndex - 1]) },
-    trackTouch: true
+    trackTouch: true,
+    delta: 50
   })
 
   return (
