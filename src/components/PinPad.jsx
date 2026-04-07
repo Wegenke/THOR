@@ -7,21 +7,25 @@ const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'submit']
 
 export default function PinPad({ user, onLockout, onBack }) {
   const { login: setUser } = useAuth()
-  const [pin, setPin] = useState('')
+  const pinRef = useRef('')
+  const [pinDisplay, setPinDisplay] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const submittingRef = useRef(false)
 
   const avatarSrc = buildAvatarSrc(user.avatar)
   const activeKeyRef = useRef(null)
 
+  const syncDisplay = () => setPinDisplay(pinRef.current)
+
   const handlePointerDown = (key, e) => {
-    if (submitting) return
+    if (submittingRef.current) return
     activeKeyRef.current = key
     e.target.setPointerCapture(e.pointerId)
   }
 
   const handlePointerUp = (key) => {
-    if (submitting || activeKeyRef.current !== key) return
+    if (submittingRef.current || activeKeyRef.current !== key) return
     activeKeyRef.current = null
     handleKey(key)
   }
@@ -31,31 +35,37 @@ export default function PinPad({ user, onLockout, onBack }) {
   }
 
   const handleKey = (key) => {
-    if (submitting) return
+    if (submittingRef.current) return
     if (key === 'del') {
-      setPin(p => p.slice(0, -1))
+      if (pinRef.current.length === 0) return
+      pinRef.current = pinRef.current.slice(0, -1)
+      syncDisplay()
       setError('')
     } else if (key === 'submit') {
-      if (pin.length >= 4) handleSubmit(pin)
-    } else if (pin.length < 8) {
-      setPin(p => p + key)
+      if (pinRef.current.length >= 4) handleSubmit(pinRef.current)
+    } else if (pinRef.current.length < 8) {
+      pinRef.current = pinRef.current + key
+      syncDisplay()
       setError('')
     }
   }
 
   const handleSubmit = async (currentPin) => {
+    submittingRef.current = true
     setSubmitting(true)
     try {
       const userData = await login(user.id, currentPin)
       setUser(userData)
     } catch (err) {
-      setPin('')
+      pinRef.current = ''
+      syncDisplay()
       if (err.response?.status === 429) {
         onLockout(user.id)
       } else {
         setError('Wrong PIN')
       }
     } finally {
+      submittingRef.current = false
       setSubmitting(false)
     }
   }
@@ -71,7 +81,7 @@ export default function PinPad({ user, onLockout, onBack }) {
         </div>
 
         <div className="flex gap-4 h-6 items-center">
-          {Array.from({ length: pin.length }, (_, i) => (
+          {Array.from({ length: pinDisplay.length }, (_, i) => (
             <div key={i} className="w-5 h-5 rounded-full bg-white" />
           ))}
         </div>
@@ -95,8 +105,8 @@ export default function PinPad({ user, onLockout, onBack }) {
               onPointerDown={(e) => handlePointerDown('submit', e)}
               onPointerUp={() => handlePointerUp('submit')}
               onPointerCancel={handlePointerCancel}
-              disabled={pin.length < 4 || submitting}
-              className={`w-36 h-36 rounded-full text-4xl font-medium disabled:opacity-30 transition-colors ${pin.length >= 4 ? 'bg-green-600/80 active:bg-green-600' : 'bg-white/20'
+              disabled={pinDisplay.length < 4 || submitting}
+              className={`w-36 h-36 rounded-full text-4xl font-medium disabled:opacity-30 transition-colors ${pinDisplay.length >= 4 ? 'bg-green-600/80 active:bg-green-600' : 'bg-white/20'
                 }`}
             >
               ✓
@@ -108,7 +118,7 @@ export default function PinPad({ user, onLockout, onBack }) {
               onPointerDown={(e) => handlePointerDown('del', e)}
               onPointerUp={() => handlePointerUp('del')}
               onPointerCancel={handlePointerCancel}
-              disabled={submitting}
+              disabled={pinDisplay.length === 0 || submitting}
               className="w-36 h-36 rounded-full bg-white/20 text-orange-300 text-4xl font-medium disabled:opacity-50"
             >
               ⌫
