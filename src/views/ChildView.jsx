@@ -5,11 +5,13 @@ import { useAuth } from '../context/AuthContext'
 import { buildAvatarSrc } from '../utils/avatar'
 import { getChildDashboard } from '../api/dashboard'
 import { getAvailableAssignments } from '../api/assignments'
+import { getUnseenAdjustments } from '../api/adjustments'
 import ChoreCard from '../components/ChoreCard'
 import ClaimCard from '../components/ClaimCard'
 import RewardsTab from '../components/RewardsTab'
 import HistoryTab from '../components/HistoryTab'
 import ProfileSettingsModal from '../components/ProfileSettingsModal'
+import UnseenAdjustmentsModal from '../components/UnseenAdjustmentsModal'
 
 const TABS = [
   { id: 'chores', label: 'My Chores' },
@@ -28,6 +30,12 @@ export default function ChildView() {
     queryKey: ['dashboard', 'child'],
     queryFn: getChildDashboard
   })
+
+  const { data: unseenAdjustments = [] } = useQuery({
+    queryKey: ['adjustments', 'unseen'],
+    queryFn: getUnseenAdjustments
+  })
+  const [adjustmentsDismissed, setAdjustmentsDismissed] = useState(false)
 
   const currentIndex = TAB_IDS.indexOf(activeTab)
   const swipeHandlers = useSwipeable({
@@ -74,6 +82,13 @@ export default function ChildView() {
       </div>
 
       {showSettings && <ProfileSettingsModal onClose={() => setShowSettings(false)} />}
+
+      {unseenAdjustments.length > 0 && !adjustmentsDismissed && (
+        <UnseenAdjustmentsModal
+          adjustments={unseenAdjustments}
+          onDone={() => setAdjustmentsDismissed(true)}
+        />
+      )}
 
       <div className="relative flex-1 min-h-0">
         <div className="h-full overflow-y-auto scrollbar-hide p-4" {...swipeHandlers}>
