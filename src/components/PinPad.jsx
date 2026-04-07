@@ -62,7 +62,7 @@ export default function PinPad({ user, onLockout, onBack }) {
         {error && <div className="text-red-400 text-lg">{error}</div>}
 
         <button
-          onClick={onBack}
+          onPointerUp={onBack}
           className="w-full py-4 rounded-xl bg-red-950/60 text-red-400 text-lg font-medium active:bg-red-900/60"
         >
           Back
@@ -75,7 +75,7 @@ export default function PinPad({ user, onLockout, onBack }) {
           if (key === 'submit') return (
             <button
               key="submit"
-              onClick={() => handleKey('submit')}
+              onPointerUp={() => handleKey('submit')}
               disabled={pin.length < 4 || submitting}
               className={`w-36 h-36 rounded-full text-4xl font-medium disabled:opacity-30 transition-colors ${pin.length >= 4 ? 'bg-green-600/80 active:bg-green-600' : 'bg-white/20'
                 }`}
@@ -86,7 +86,7 @@ export default function PinPad({ user, onLockout, onBack }) {
           if (key === 'del') return (
             <button
               key="del"
-              onClick={() => handleKey('del')}
+              onPointerUp={() => handleKey('del')}
               disabled={submitting}
               className="w-36 h-36 rounded-full bg-white/20 text-orange-300 text-4xl font-medium disabled:opacity-50"
             >
@@ -96,7 +96,7 @@ export default function PinPad({ user, onLockout, onBack }) {
           return (
             <button
               key={key}
-              onClick={() => handleKey(key)}
+              onPointerUp={() => handleKey(key)}
               disabled={submitting}
               className="w-36 h-36 rounded-full bg-white/20 text-4xl font-medium disabled:opacity-50"
             >
