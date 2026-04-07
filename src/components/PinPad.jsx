@@ -62,7 +62,7 @@ export default function PinPad({ user, onLockout, onBack }) {
         {error && <div className="text-red-400 text-lg">{error}</div>}
 
         <button
-          onPointerUp={onBack}
+          onClick={onBack}
           className="w-full py-4 rounded-xl bg-red-950/60 text-red-400 text-lg font-medium active:bg-red-900/60"
         >
           Back
