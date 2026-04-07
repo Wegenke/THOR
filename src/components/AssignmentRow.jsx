@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { buildAvatarSrc } from '../utils/avatar'
-import { cancelAssignment, parentPauseAssignment, reassignAssignment, unassignAssignment } from '../api/assignments'
+import { cancelAssignment, parentStartAssignment, parentPauseAssignment, reassignAssignment, unassignAssignment } from '../api/assignments'
 
 const STATUS_LABELS = {
   unassigned: 'Unassigned',
@@ -23,6 +23,7 @@ export default function AssignmentRow({ assignment, children }) {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['assignments'] })
 
   const collapse = () => setExpanded(false)
+  const parentStart = useMutation({ mutationFn: () => parentStartAssignment(assignment.id), onSuccess: invalidate })
   const cancel = useMutation({ mutationFn: () => cancelAssignment(assignment.id), onSuccess: invalidate })
   const parentPause = useMutation({ mutationFn: () => parentPauseAssignment(assignment.id), onSuccess: invalidate })
   const reassign = useMutation({
@@ -31,9 +32,10 @@ export default function AssignmentRow({ assignment, children }) {
   })
   const unassign = useMutation({ mutationFn: () => unassignAssignment(assignment.id), onSuccess: invalidate })
 
-  const busy = cancel.isPending || parentPause.isPending || reassign.isPending || unassign.isPending
+  const busy = parentStart.isPending || cancel.isPending || parentPause.isPending || reassign.isPending || unassign.isPending
   const { status, chore_title, emoji, points, child_name, child_avatar } = assignment
 
+  const canStart = status === 'assigned'
   const canCancel = ['assigned', 'rejected'].includes(status)
   const canPause = status === 'in_progress'
   const canReassign = ['assigned', 'rejected'].includes(status)
@@ -69,6 +71,13 @@ export default function AssignmentRow({ assignment, children }) {
       </div>
       {expanded && (
         <div className="flex gap-1.5 flex-wrap" onClick={e => e.stopPropagation()}>
+          <button
+            onClick={() => { collapse(); parentStart.mutate() }}
+            disabled={!canStart || busy}
+            className="px-3 py-1.5 rounded-lg bg-green-600/80 text-xs font-medium disabled:opacity-30 active:bg-green-600"
+          >
+            Start
+          </button>
           <button
             onClick={() => { collapse(); parentPause.mutate() }}
             disabled={!canPause || busy}
