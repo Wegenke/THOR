@@ -6,13 +6,17 @@ import { getMyTransactions } from "../api/transactions"
 const TX_COLORS = {
   chore_approved: 'text-green-400',
   reward_contribution: 'text-red-400',
-  reward_refund: 'text-amber-400'
+  reward_refund: 'text-amber-400',
+  adjustment_reward: 'text-green-400',
+  adjustment_penalty: 'text-red-400'
 }
 
 const SOURCE_EMOJI = {
   chore_approved: '✅',
   reward_contribution: '🎁',
-  reward_refund: '↩️'
+  reward_refund: '↩️',
+  adjustment_reward: '⭐',
+  adjustment_penalty: '⚠️'
 }
 
 export default function HistoryTab() {
@@ -30,7 +34,9 @@ export default function HistoryTab() {
   const SOURCE_LABELS = {
     chore_approved: 'Chore approved',
     reward_contribution: 'Reward contribution',
-    reward_refund: 'Reward refund'
+    reward_refund: 'Reward refund',
+    adjustment_reward: 'Reward',
+    adjustment_penalty: 'Penalty'
   }
 
   if (transactions.length === 0) return (

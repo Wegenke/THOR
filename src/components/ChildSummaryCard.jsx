@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { buildAvatarSrc } from '../utils/avatar'
 import AdjustPointsModal from './AdjustPointsModal'
+import ViewAsChildModal from './ViewAsChildModal'
 
 export default function ChildSummaryCard({ child }) {
   const avatarSrc = buildAvatarSrc(child.avatar)
   const [showAdjust, setShowAdjust] = useState(false)
+  const [showView, setShowView] = useState(false)
 
   const counts = child.assignment_counts || {}
   const active = (counts.in_progress || 0) + (counts.paused || 0) + (counts.parent_paused || 0)
@@ -16,7 +18,7 @@ export default function ChildSummaryCard({ child }) {
     <>
       <div className="flex flex-col gap-2 bg-white/15 rounded-xl px-4 py-3">
 
-        <div className="flex items-center gap-3">
+        <button className="flex items-center gap-3 text-left active:opacity-70" onClick={() => setShowView(true)}>
           <img src={avatarSrc} alt={child.name} className="w-10 h-10 rounded-full" />
           <div className="flex-1 min-w-0">
             <div className="font-medium truncate">{child.nick_name || child.name}</div>
@@ -24,7 +26,7 @@ export default function ChildSummaryCard({ child }) {
           <span className="text-sm font-semibold text-white/70 whitespace-nowrap">
             {child.points_balance} pts
           </span>
-        </div>
+        </button>
 
         {(assigned > 0 || active > 0 || submitted > 0 || rejected > 0) && (
           <div className="flex gap-1.5 flex-wrap">
@@ -52,6 +54,9 @@ export default function ChildSummaryCard({ child }) {
 
       {showAdjust && (
         <AdjustPointsModal child={child} onClose={() => setShowAdjust(false)} />
+      )}
+      {showView && (
+        <ViewAsChildModal child={child} onClose={() => setShowView(false)} />
       )}
     </>
   )

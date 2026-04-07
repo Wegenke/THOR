@@ -6,26 +6,34 @@ import { getHouseholdTransactions, getTransactionsByChild } from '../api/transac
 const TX_COLORS = {
   chore_approved: 'text-green-400',
   reward_contribution: 'text-red-400',
-  reward_refund: 'text-amber-400'
+  reward_refund: 'text-amber-400',
+  adjustment_reward: 'text-green-400',
+  adjustment_penalty: 'text-red-400'
 }
 
 const SOURCE_LABELS = {
   chore_approved: 'Chore approved',
   reward_contribution: 'Reward contribution',
-  reward_refund: 'Reward refund'
+  reward_refund: 'Reward refund',
+  adjustment_reward: 'Reward',
+  adjustment_penalty: 'Penalty'
 }
 
 const SOURCE_EMOJI = {
   chore_approved: '✅',
   reward_contribution: '🎁',
-  reward_refund: '↩️'
+  reward_refund: '↩️',
+  adjustment_reward: '⭐',
+  adjustment_penalty: '⚠️'
 }
 
 const FILTERS = [
   { id: null, label: 'All' },
   { id: 'chore_approved', label: 'Chore Earned' },
   { id: 'reward_contribution', label: 'Contribution' },
-  { id: 'reward_refund', label: 'Refund' }
+  { id: 'reward_refund', label: 'Refund' },
+  { id: 'adjustment_reward', label: 'Rewards' },
+  { id: 'adjustment_penalty', label: 'Penalties' }
 ]
 
 function TransactionRow({ tx, showChild = false, onChildClick }) {
