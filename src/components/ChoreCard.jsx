@@ -36,7 +36,7 @@ export default function ChoreCard({ assignment }) {
   const busy = start.isPending || submit.isPending || pause.isPending || resume.isPending || resumeRejected.isPending
 
   const [showDescription, setShowDescription] = useState(false)
-  const { status, chore_title, emoji, points, description } = assignment
+  const { status, chore_title, emoji, points, description, frequency } = assignment
 
   return (
     <>
@@ -54,53 +54,60 @@ export default function ChoreCard({ assignment }) {
           </button>
           <div className="flex flex-col items-end gap-1 shrink-0">
             <div className="text-white text-base font-semibold whitespace-nowrap">{points} pts</div>
-            <button onClick={() => setShowComments(true)} className="text-xs text-white/40 active:text-white/70">
-              💬
-            </button>
+            {frequency && (
+              <div className="text-xs text-white/40">🔁 {frequency.charAt(0).toUpperCase() + frequency.slice(1)}</div>
+            )}
           </div>
         </div>
 
         <div className="flex gap-2">
-          {status === 'assigned' && (
-            <button onClick={() => start.mutate()} disabled={busy}
-              className="flex-1 py-3 rounded-lg bg-green-600/80 font-medium disabled:opacity-40 active:bg-green-600">
-              Start
-            </button>
-          )}
+          <div className="flex gap-2 flex-1 min-w-0">
+            {status === 'assigned' && (
+              <button onClick={() => start.mutate()} disabled={busy}
+                className="flex-1 py-3 rounded-lg bg-green-600/80 font-medium disabled:opacity-40 active:bg-green-600">
+                Start
+              </button>
+            )}
 
-          {(status === 'in_progress' || status === 'paused') && (
-            <button onClick={() => submit.mutate()} disabled={busy}
-              className="flex-1 py-3 rounded-lg bg-green-600/80 font-medium disabled:opacity-40 active:bg-green-600">
-              Submit
-            </button>
-          )}
+            {(status === 'in_progress' || status === 'paused') && (
+              <button onClick={() => submit.mutate()} disabled={busy}
+                className="flex-1 py-3 rounded-lg bg-green-600/80 font-medium disabled:opacity-40 active:bg-green-600">
+                Submit
+              </button>
+            )}
 
-          {status === 'in_progress' && (
-            <button onClick={() => pause.mutate()} disabled={busy}
-              className="flex-1 py-3 rounded-lg bg-orange-600/80 font-medium disabled:opacity-40 active:bg-orange-600">
-              Pause
-            </button>
-          )}
+            {status === 'in_progress' && (
+              <button onClick={() => pause.mutate()} disabled={busy}
+                className="flex-1 py-3 rounded-lg bg-orange-600/80 font-medium disabled:opacity-40 active:bg-orange-600">
+                Pause
+              </button>
+            )}
 
-          {(status === 'paused' || status === 'parent_paused') && (
-            <button onClick={() => resume.mutate()} disabled={busy}
-              className="flex-1 py-3 rounded-lg bg-yellow-600/80 font-medium disabled:opacity-40 active:bg-yellow-600">
-              Resume
-            </button>
-          )}
+            {(status === 'paused' || status === 'parent_paused') && (
+              <button onClick={() => resume.mutate()} disabled={busy}
+                className="flex-1 py-3 rounded-lg bg-yellow-600/80 font-medium disabled:opacity-40 active:bg-yellow-600">
+                Resume
+              </button>
+            )}
 
-          {status === 'rejected' && (
-            <button onClick={() => resumeRejected.mutate()} disabled={busy}
-              className="flex-1 py-3 rounded-lg bg-yellow-600/80 font-medium disabled:opacity-40 active:bg-yellow-600">
-              Resume
-            </button>
-          )}
+            {status === 'rejected' && (
+              <button onClick={() => resumeRejected.mutate()} disabled={busy}
+                className="flex-1 py-3 rounded-lg bg-yellow-600/80 font-medium disabled:opacity-40 active:bg-yellow-600">
+                Resume
+              </button>
+            )}
 
-          {status === 'submitted' && (
-            <div className="flex-1 py-3 rounded-lg bg-white/5 text-center text-white/40 text-sm">
-              Waiting for review…
-            </div>
-          )}
+            {status === 'submitted' && (
+              <div className="flex-1 py-3 rounded-lg bg-white/5 text-center text-white/40 text-sm">
+                Waiting for review…
+              </div>
+            )}
+          </div>
+
+          <button onClick={() => setShowComments(true)}
+            className="w-[10%] shrink-0 py-3 rounded-lg bg-sky-700/40 text-lg active:bg-sky-700/60">
+            💬
+          </button>
         </div>
 
       </div>

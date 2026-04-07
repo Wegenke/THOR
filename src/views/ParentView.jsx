@@ -7,6 +7,7 @@ import { getParentDashboard } from '../api/dashboard'
 import { pauseAllActive, assignAssignment, cancelAssignment } from '../api/assignments'
 import { approveReward, rejectReward, approveRefund, rejectRefund } from '../api/rewards'
 import { useKboard } from '../hooks/useKboard'
+import ProfileSettingsModal from '../components/ProfileSettingsModal'
 import ApprovalCard from '../components/ApprovalCard'
 import ChildSummaryCard from '../components/ChildSummaryCard'
 import ChoresTab from '../components/ChoresTab'
@@ -26,6 +27,7 @@ const TAB_IDS = TABS.map(t => t.id)
 export default function ParentView() {
   const { user, logout } = useAuth()
   const [activeTab, setActiveTab] = useState('dashboard')
+  const [showSettings, setShowSettings] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard', 'parent'],
@@ -46,7 +48,9 @@ export default function ParentView() {
       {/* Header */}
       <div className="flex items-center px-6 py-3 border-b border-white/10 gap-4">
         <div className="flex items-center gap-3 min-w-0 w-48">
-          <img src={buildAvatarSrc(user.avatar)} alt={user.name} className="w-12 h-12 rounded-full shrink-0" />
+          <button onClick={() => setShowSettings(true)} className="shrink-0">
+            <img src={buildAvatarSrc(user.avatar)} alt={user.name} className="w-12 h-12 rounded-full" />
+          </button>
           <span className="text-lg font-semibold truncate">{user.nick_name || user.name}</span>
         </div>
 
@@ -69,6 +73,8 @@ export default function ParentView() {
           </button>
         </div>
       </div>
+
+      {showSettings && <ProfileSettingsModal onClose={() => setShowSettings(false)} />}
 
       {/* Content */}
       <div className="relative flex-1 min-h-0">
