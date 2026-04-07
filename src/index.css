@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+*, *::before, *::after {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .bg-app-gradient {
   background:
     linear-gradient(135deg, rgba(10,42,42,0.97) 0%, rgba(20,12,20,0.97) 50%, rgba(51,16,5,0.97) 100%),
