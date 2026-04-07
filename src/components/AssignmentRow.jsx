@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { buildAvatarSrc } from '../utils/avatar'
 import { cancelAssignment, parentPauseAssignment, reassignAssignment, unassignAssignment } from '../api/assignments'
@@ -18,6 +18,7 @@ const STATUS_LABELS = {
 
 export default function AssignmentRow({ assignment, children }) {
   const [expanded, setExpanded] = useState(false)
+  const cardRef = useRef(null)
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['assignments'] })
 
@@ -38,8 +39,12 @@ export default function AssignmentRow({ assignment, children }) {
   const canReassign = ['assigned', 'rejected'].includes(status)
   const canUnassign = ['assigned', 'rejected', 'paused', 'parent_paused'].includes(status)
 
+  useEffect(() => {
+    if (expanded) cardRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [expanded])
+
   return (
-    <div className="bg-white/15 rounded-xl px-4 py-3 flex flex-col gap-2">
+    <div ref={cardRef} className="bg-white/15 rounded-xl px-4 py-3 flex flex-col gap-2">
       <div
         className="flex items-center gap-3 cursor-pointer"
         onClick={() => setExpanded(!expanded)}

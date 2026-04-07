@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { buildAvatarSrc } from '../utils/avatar'
 import { approveAssignment, rejectAssignment, dismissAssignment } from '../api/assignments'
@@ -12,6 +12,11 @@ export default function ApprovalCard({ assignment }) {
   const [rejectMode, setRejectMode] = useState(false)
   const [comment, setComment] = useState('')
   const [showComments, setShowComments] = useState(false)
+  const cardRef = useRef(null)
+
+  useEffect(() => {
+    if (rejectMode) cardRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [rejectMode])
 
   const commentKb = useKboard(comment, setComment)
 
@@ -30,7 +35,7 @@ export default function ApprovalCard({ assignment }) {
 
   return (
     <>
-    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
+    <div ref={cardRef} className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
 
       <div className="flex items-center gap-3 px-3">
         <span className="text-2xl">{assignment.emoji}</span>

@@ -1,4 +1,4 @@
-import { useState, useRef, useLayoutEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSwipeable } from 'react-swipeable'
 import { useAuth } from '../context/AuthContext'
@@ -235,6 +235,11 @@ function DashRewardCard({ reward, onSuccess }) {
   const [approving, setApproving] = useState(false)
   const [points, setPoints] = useState('')
   const kbPoints = useKboard(points, setPoints, { mode: 'numeric' })
+  const cardRef = useRef(null)
+
+  useEffect(() => {
+    if (approving) cardRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [approving])
 
   const approve = useMutation({
     mutationFn: () => approveReward(reward.id, Number(points)),
@@ -249,7 +254,7 @@ function DashRewardCard({ reward, onSuccess }) {
   const valid = points && Number(points) > 0 && Number(points) % 10 === 0
 
   return (
-    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
+    <div ref={cardRef} className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
       <div className="flex flex-col gap-0.5 min-w-0">
         <span className="font-semibold leading-tight truncate">{reward.name}</span>
         {reward.description && (

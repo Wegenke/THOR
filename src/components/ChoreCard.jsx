@@ -63,35 +63,35 @@ export default function ChoreCard({ assignment }) {
         <div className="flex gap-2">
           <div className="flex gap-2 flex-1 min-w-0">
             {status === 'assigned' && (
-              <button onClick={() => start.mutate()} disabled={busy}
+              <button onPointerDown={() => start.mutate()} disabled={busy}
                 className="flex-1 py-3 rounded-lg bg-green-600/80 font-medium disabled:opacity-40 active:bg-green-600">
                 Start
               </button>
             )}
 
             {(status === 'in_progress' || status === 'paused') && (
-              <button onClick={() => submit.mutate()} disabled={busy}
+              <button onPointerDown={() => submit.mutate()} disabled={busy}
                 className="flex-1 py-3 rounded-lg bg-green-600/80 font-medium disabled:opacity-40 active:bg-green-600">
                 Submit
               </button>
             )}
 
             {status === 'in_progress' && (
-              <button onClick={() => pause.mutate()} disabled={busy}
+              <button onPointerDown={() => pause.mutate()} disabled={busy}
                 className="flex-1 py-3 rounded-lg bg-orange-600/80 font-medium disabled:opacity-40 active:bg-orange-600">
                 Pause
               </button>
             )}
 
             {(status === 'paused' || status === 'parent_paused') && (
-              <button onClick={() => resume.mutate()} disabled={busy}
+              <button onPointerDown={() => resume.mutate()} disabled={busy}
                 className="flex-1 py-3 rounded-lg bg-yellow-600/80 font-medium disabled:opacity-40 active:bg-yellow-600">
                 Resume
               </button>
             )}
 
             {status === 'rejected' && (
-              <button onClick={() => resumeRejected.mutate()} disabled={busy}
+              <button onPointerDown={() => resumeRejected.mutate()} disabled={busy}
                 className="flex-1 py-3 rounded-lg bg-yellow-600/80 font-medium disabled:opacity-40 active:bg-yellow-600">
                 Resume
               </button>
