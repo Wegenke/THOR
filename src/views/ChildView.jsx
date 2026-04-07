@@ -10,10 +10,12 @@ import ChoreCard from '../components/ChoreCard'
 import ClaimCard from '../components/ClaimCard'
 import RewardsTab from '../components/RewardsTab'
 import HistoryTab from '../components/HistoryTab'
+import ChildDashboardTab from '../components/ChildDashboardTab'
 import ProfileSettingsModal from '../components/ProfileSettingsModal'
 import UnseenAdjustmentsModal from '../components/UnseenAdjustmentsModal'
 
 const TABS = [
+  { id: 'dashboard', label: 'Dashboard' },
   { id: 'chores', label: 'My Chores' },
   { id: 'claim', label: 'Claim' },
   { id: 'rewards', label: 'Rewards' },
@@ -23,7 +25,7 @@ const TAB_IDS = TABS.map(t => t.id)
 
 export default function ChildView() {
   const { user, logout } = useAuth()
-  const [activeTab, setActiveTab] = useState('chores')
+  const [activeTab, setActiveTab] = useState('dashboard')
   const [showSettings, setShowSettings] = useState(false)
 
   const { data, isLoading } = useQuery({
@@ -92,12 +94,15 @@ export default function ChildView() {
 
       <div className="relative flex-1 min-h-0">
         <div className="h-full overflow-y-auto scrollbar-hide p-4" {...swipeHandlers}>
+          {activeTab === 'dashboard' && <ChildDashboardTab />}
           {activeTab === 'chores' && <ChoresTab data={data} isLoading={isLoading} />}
           {activeTab === 'claim' && <ClaimTab />}
           {activeTab === 'rewards' && <RewardsTab data={data} isLoading={isLoading}/>}
           {activeTab === 'history' && <HistoryTab />}
         </div>
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900 to-transparent" />
+        {activeTab !== 'dashboard' && (
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900 to-transparent" />
+        )}
       </div>
 
     </div>

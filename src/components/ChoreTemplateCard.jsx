@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { buildAvatarSrc } from '../utils/avatar'
 
 export const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -135,6 +135,11 @@ function RecurrencePrompt({ childName, onOneTime, onRecurring, onCancel }) {
 export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAssign, onSchedule }) {
   const [cooldowns, setCooldowns] = useState(new Set())
   const [promptChild, setPromptChild] = useState(null)
+  const cardRef = useRef(null)
+
+  useEffect(() => {
+    if (promptChild) cardRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [promptChild])
 
   const handleOneTime = (child_id) => {
     const key = child_id ?? 'pool'
@@ -155,7 +160,7 @@ export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAs
   const hasSchedule = (child_id) => (chore.schedules || []).some(s => s.child_id === child_id)
 
   return (
-    <div className="bg-white/15 rounded-xl p-3 flex flex-col justify-between gap-2">
+    <div ref={cardRef} className="bg-white/15 rounded-xl p-3 flex flex-col justify-between gap-2">
       <div className="flex items-center justify-between">
         <span className="text-2xl">{chore.emoji}</span>
         <div className="flex items-center gap-2">

@@ -19,6 +19,21 @@ const STATUS_LABELS = {
   rejected: 'Rejected — needs attention'
 }
 
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+function formatRecurrence(frequency, day_of_week, day_of_month) {
+  if (!frequency) return null
+  const label = frequency.charAt(0).toUpperCase() + frequency.slice(1)
+  if (frequency === 'weekly' && day_of_week != null) return `${label} (${DAY_NAMES[day_of_week]})`
+  if (frequency === 'monthly' && day_of_month != null) {
+    const suffix = day_of_month === 1 || day_of_month === 21 ? 'st'
+      : day_of_month === 2 || day_of_month === 22 ? 'nd'
+      : day_of_month === 3 || day_of_month === 23 ? 'rd' : 'th'
+    return `${label} (${day_of_month}${suffix})`
+  }
+  return label
+}
+
 export default function ChoreCard({ assignment }) {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['dashboard', 'child'] })
@@ -36,7 +51,9 @@ export default function ChoreCard({ assignment }) {
   const busy = start.isPending || submit.isPending || pause.isPending || resume.isPending || resumeRejected.isPending
 
   const [showDescription, setShowDescription] = useState(false)
-  const { status, chore_title, emoji, points, description, frequency } = assignment
+  const { status, chore_title, emoji, points, description, frequency, day_of_week, day_of_month } = assignment
+
+  const recurrenceLabel = formatRecurrence(frequency, day_of_week, day_of_month)
 
   return (
     <>
@@ -44,7 +61,7 @@ export default function ChoreCard({ assignment }) {
         <div className="flex items-start justify-between gap-2 px-3">
           <button
             className="flex items-center gap-3 text-left active:opacity-70"
-            onClick={() => description && setShowDescription(true)}
+            onClick={() => setShowDescription(true)}
           >
             <span className="text-3xl">{emoji}</span>
             <div>
@@ -52,11 +69,11 @@ export default function ChoreCard({ assignment }) {
               <div className="text-white/50 text-sm mt-0.5">{STATUS_LABELS[status] ?? status}</div>
             </div>
           </button>
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            <div className="text-white text-base font-semibold whitespace-nowrap">{points} pts</div>
-            {frequency && (
-              <div className="text-xs text-white/40">🔁 {frequency.charAt(0).toUpperCase() + frequency.slice(1)}</div>
+          <div className="flex items-center gap-2 shrink-0">
+            {recurrenceLabel && (
+              <div className="text-white/40 text-lg font-semibold">🔁 {recurrenceLabel}</div>
             )}
+            <div className="text-white text-3xl font-semibold whitespace-nowrap">{points} pts</div>
           </div>
         </div>
 
@@ -112,7 +129,7 @@ export default function ChoreCard({ assignment }) {
 
       </div>
 
-      {showDescription && description && (
+      {showDescription && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
           onClick={() => setShowDescription(false)}>
           <div className="w-[32rem] bg-slate-800 rounded-2xl p-5 flex flex-col gap-3"
@@ -124,7 +141,11 @@ export default function ChoreCard({ assignment }) {
               </div>
               <button onClick={() => setShowDescription(false)} className="text-white/50 active:text-white/80 text-lg">✕</button>
             </div>
-            <p className="text-white/70 leading-relaxed">{description}</p>
+            {description && <p className="text-white/70 leading-relaxed">{description}</p>}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-white font-semibold">{points} pts</span>
+              {recurrenceLabel && <span className="text-white/40">🔁 {recurrenceLabel}</span>}
+            </div>
           </div>
         </div>
       )}

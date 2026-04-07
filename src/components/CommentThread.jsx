@@ -18,6 +18,7 @@ export default function CommentThread({ assignmentId }) {
     mutationFn: (value) => postAssignmentComment(assignmentId, value),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', assignmentId] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       setText('')
     }
   })

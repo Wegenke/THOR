@@ -29,6 +29,8 @@ export const claimAssignment = (id) => client.patch(`/assignments/${id}/claim`).
 
 export const getAssignments = () => client.get('/assignments').then(r=>r.data)
 
+export const getMissedAssignments = (params) => client.get('/assignments/missed', { params }).then(r => r.data)
+
 export const createAssignment = (body) => client.post('/assignments', body).then(r => r.data)
 
 export const cancelAssignment = (id, comment) => client.patch(`/assignments/${id}/cancel`, comment ? { comment } : {}).then(r => r.data)
