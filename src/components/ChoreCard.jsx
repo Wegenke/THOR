@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import CommentThread from './CommentThread'
 
@@ -34,22 +34,32 @@ function formatRecurrence(frequency, day_of_week, day_of_month) {
   return label
 }
 
-export default function ChoreCard({ assignment }) {
+export default function ChoreCard({ assignment, onRejectedModalChange, activeRejectedId, onRejectedDismissed, rejectedCount = 1 }) {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['dashboard', 'child'] })
   const isRejected = assignment.status === 'rejected'
-  const [showComments, setShowComments] = useState(isRejected)
+  const isActiveRejected = isRejected && assignment.id === activeRejectedId
+  const [showComments, setShowComments] = useState(false)
   const [rejectedReady, setRejectedReady] = useState(false)
+  const rejectedDelay = rejectedCount === 1 ? 3000 : rejectedCount === 2 ? 2000 : 1000
   useEffect(() => {
-    if (isRejected) setShowComments(true)
-  }, [isRejected])
-  useEffect(() => {
-    if (showComments && isRejected) {
+    if (isActiveRejected) {
+      setShowComments(true)
       setRejectedReady(false)
-      const timer = setTimeout(() => setRejectedReady(true), 2000)
+    }
+  }, [isActiveRejected])
+  useEffect(() => {
+    if (showComments && isActiveRejected) {
+      setRejectedReady(false)
+      const timer = setTimeout(() => setRejectedReady(true), rejectedDelay)
       return () => clearTimeout(timer)
     }
-  }, [showComments, isRejected])
+  }, [showComments, isActiveRejected, rejectedDelay])
+  useEffect(() => {
+    if (!isActiveRejected || !onRejectedModalChange || !showComments) return
+    onRejectedModalChange(c => c + 1)
+    return () => onRejectedModalChange(c => c - 1)
+  }, [showComments, isActiveRejected, onRejectedModalChange])
 
   const start = useMutation({ mutationFn: () => startAssignment(assignment.id), onSuccess: invalidate })
   const submit = useMutation({ mutationFn: () => submitAssignment(assignment.id), onSuccess: invalidate })
@@ -59,8 +69,44 @@ export default function ChoreCard({ assignment }) {
 
   const busy = start.isPending || submit.isPending || pause.isPending || resume.isPending || resumeRejected.isPending
 
+  const [pendingStart, setPendingStart] = useState(false)
+  const [undoCountdown, setUndoCountdown] = useState(0)
+  const undoIntervalRef = useRef(null)
+  const pendingStartRef = useRef(false)
+
+  const handleStart = () => {
+    setPendingStart(true)
+    pendingStartRef.current = true
+    setUndoCountdown(5)
+    undoIntervalRef.current = setInterval(() => setUndoCountdown(prev => prev - 1), 1000)
+  }
+
+  const handleUndo = () => {
+    setPendingStart(false)
+    pendingStartRef.current = false
+    setUndoCountdown(0)
+    clearInterval(undoIntervalRef.current)
+  }
+
+  useEffect(() => {
+    if (pendingStart && undoCountdown <= 0) {
+      clearInterval(undoIntervalRef.current)
+      setPendingStart(false)
+      pendingStartRef.current = false
+      start.mutate()
+    }
+  }, [undoCountdown, pendingStart])
+
+  useEffect(() => {
+    return () => {
+      clearInterval(undoIntervalRef.current)
+      if (pendingStartRef.current) startAssignment(assignment.id).then(() => queryClient.invalidateQueries({ queryKey: ['dashboard', 'child'] }))
+    }
+  }, [])
+
   const [showDescription, setShowDescription] = useState(false)
   const { status, chore_title, emoji, points, description, frequency, day_of_week, day_of_month } = assignment
+  const displayStatus = pendingStart ? 'in_progress' : status
 
   const recurrenceLabel = formatRecurrence(frequency, day_of_week, day_of_month)
 
@@ -75,7 +121,7 @@ export default function ChoreCard({ assignment }) {
             <span className="text-3xl">{emoji}</span>
             <div>
               <div className="font-semibold text-lg leading-tight">{chore_title}</div>
-              <div className="text-white/50 text-sm mt-0.5">{STATUS_LABELS[status] ?? status}</div>
+              <div className="text-white/50 text-sm mt-0.5">{STATUS_LABELS[displayStatus] ?? displayStatus}</div>
             </div>
           </button>
           <div className="flex items-center gap-2 shrink-0">
@@ -86,55 +132,62 @@ export default function ChoreCard({ assignment }) {
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <div className="flex gap-2 flex-1 min-w-0">
-            {status === 'assigned' && (
-              <button onPointerDown={() => start.mutate()} disabled={busy}
-                className="flex-1 py-3 rounded-lg bg-green-600/80 font-medium disabled:opacity-40 active:bg-green-600">
-                Start
-              </button>
-            )}
-
-            {(status === 'in_progress' || status === 'paused') && (
-              <button onPointerDown={() => submit.mutate()} disabled={busy}
-                className="flex-1 py-3 rounded-lg bg-green-600/80 font-medium disabled:opacity-40 active:bg-green-600">
-                Submit
-              </button>
-            )}
-
-            {status === 'in_progress' && (
-              <button onPointerDown={() => pause.mutate()} disabled={busy}
-                className="flex-1 py-3 rounded-lg bg-orange-600/80 font-medium disabled:opacity-40 active:bg-orange-600">
-                Pause
-              </button>
-            )}
-
-            {(status === 'paused' || status === 'parent_paused') && (
-              <button onPointerDown={() => resume.mutate()} disabled={busy}
-                className="flex-1 py-3 rounded-lg bg-yellow-600/80 font-medium disabled:opacity-40 active:bg-yellow-600">
-                Resume
-              </button>
-            )}
-
-            {status === 'rejected' && (
-              <button onPointerDown={() => resumeRejected.mutate()} disabled={busy}
-                className="flex-1 py-3 rounded-lg bg-yellow-600/80 font-medium disabled:opacity-40 active:bg-yellow-600">
-                Resume
-              </button>
-            )}
-
-            {status === 'submitted' && (
-              <div className="flex-1 py-3 rounded-lg bg-white/5 text-center text-white/40 text-sm">
-                Waiting for review…
-              </div>
-            )}
-          </div>
-
-          <button onClick={() => setShowComments(true)}
-            className="w-[10%] shrink-0 py-3 rounded-lg bg-sky-700/40 text-lg active:bg-sky-700/60">
-            💬
+        {pendingStart ? (
+          <button onPointerDown={handleUndo}
+            className="w-full py-3 rounded-lg bg-teal-400/80 font-medium active:bg-teal-400 text-lg">
+            Undo ({undoCountdown}s)
           </button>
-        </div>
+        ) : (
+          <div className="flex gap-2">
+            <div className="flex gap-2 flex-1 min-w-0">
+              {status === 'assigned' && (
+                <button onPointerDown={handleStart} disabled={busy}
+                  className="flex-1 py-3 rounded-lg bg-green-600/80 font-medium disabled:opacity-40 active:bg-green-600">
+                  Start
+                </button>
+              )}
+
+              {(status === 'in_progress' || status === 'paused') && (
+                <button onPointerDown={() => submit.mutate()} disabled={busy}
+                  className="flex-1 py-3 rounded-lg bg-green-600/80 font-medium disabled:opacity-40 active:bg-green-600">
+                  Submit
+                </button>
+              )}
+
+              {status === 'in_progress' && (
+                <button onPointerDown={() => pause.mutate()} disabled={busy}
+                  className="flex-1 py-3 rounded-lg bg-orange-600/80 font-medium disabled:opacity-40 active:bg-orange-600">
+                  Pause
+                </button>
+              )}
+
+              {(status === 'paused' || status === 'parent_paused') && (
+                <button onPointerDown={() => resume.mutate()} disabled={busy}
+                  className="flex-1 py-3 rounded-lg bg-yellow-600/80 font-medium disabled:opacity-40 active:bg-yellow-600">
+                  Resume
+                </button>
+              )}
+
+              {status === 'rejected' && (
+                <button onPointerDown={() => resumeRejected.mutate()} disabled={busy}
+                  className="flex-1 py-3 rounded-lg bg-yellow-600/80 font-medium disabled:opacity-40 active:bg-yellow-600">
+                  Resume
+                </button>
+              )}
+
+              {status === 'submitted' && (
+                <div className="flex-1 py-3 rounded-lg bg-white/5 text-center text-white/40 text-sm">
+                  Waiting for review…
+                </div>
+              )}
+            </div>
+
+            <button onClick={() => setShowComments(true)}
+              className="w-[10%] shrink-0 py-3 rounded-lg bg-sky-700/40 text-lg active:bg-sky-700/60">
+              💬
+            </button>
+          </div>
+        )}
 
       </div>
 
@@ -161,14 +214,14 @@ export default function ChoreCard({ assignment }) {
 
       {showComments && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-          onClick={isRejected ? undefined : () => setShowComments(false)}>
+          onClick={isActiveRejected ? undefined : () => setShowComments(false)}>
           <div className="w-[36rem] bg-slate-800 rounded-2xl p-5 flex flex-col gap-3"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <span className="font-semibold">{chore_title}</span>
-              {isRejected ? (
+              {isActiveRejected ? (
                 <button
-                  onClick={() => setShowComments(false)}
+                  onClick={() => { setShowComments(false); onRejectedDismissed?.(assignment.id) }}
                   disabled={!rejectedReady}
                   className={`text-lg transition-opacity ${rejectedReady ? 'text-white/50 active:text-white/80' : 'opacity-0'}`}
                 >✕</button>

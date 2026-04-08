@@ -23,7 +23,7 @@ export default function ChildSummaryCard({ child }) {
           <div className="flex-1 min-w-0">
             <div className="font-medium truncate">{child.nick_name || child.name}</div>
           </div>
-          <span className="text-sm font-semibold text-white/70 whitespace-nowrap">
+          <span className="text-xl font-semibold text-white/70 whitespace-nowrap">
             {child.points_balance} pts
           </span>
         </button>

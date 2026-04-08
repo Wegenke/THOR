@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react'
+import { useState, useContext, useRef, useLayoutEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { KboardContext } from '../context/KboardContext'
 import { buildAvatarSrc } from '../utils/avatar'
@@ -86,41 +86,33 @@ export default function ChoresTab() {
             No chore templates yet
           </div>
         ) : (
-          <div className="relative flex-1 min-h-0">
-            <div className="grid grid-cols-2 gap-3 overflow-y-auto h-full scrollbar-hide">
-              {chores.map(chore => (
-                <ChoreTemplateCard
-                  key={chore.id}
-                  chore={chore}
-                  children={children}
-                  onTap={() => setViewingChore(chore)}
-                  onEdit={() => { setEditingChoreId(chore.id); setShowCreateForm(false) }}
-                  onAssign={(child_id) => {
-                    const body = { chore_id: chore.id }
-                    if (child_id) body.child_id = child_id
-                    createAssignment(body).then(() => {
-                      queryClient.invalidateQueries({ queryKey: ['assignments'] })
-                    })
-                  }}
-                  onSchedule={(chore_id, child_id, frequency, day_of_week, day_of_month) => {
-                    const body = { chore_id, child_id, frequency }
-                    if (day_of_week !== undefined && day_of_week !== null) body.day_of_week = day_of_week
-                    if (day_of_month !== undefined && day_of_month !== null) body.day_of_month = day_of_month
-                    createSchedule(body).then(() => {
-                      queryClient.invalidateQueries({ queryKey: ['chores'] })
-                      queryClient.invalidateQueries({ queryKey: ['assignments'] })
-                    })
-                  }}
-                  onDeleteSchedule={(id) => {
-                    apiDeleteSchedule(id).then(() => {
-                      queryClient.invalidateQueries({ queryKey: ['chores'] })
-                    })
-                  }}
-                />
-              ))}
-            </div>
-            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900 to-transparent" />
-          </div>
+          <ChoreLibraryPanel
+            chores={chores}
+            children={children}
+            onTap={setViewingChore}
+            onEdit={(id) => { setEditingChoreId(id); setShowCreateForm(false) }}
+            onAssign={(chore_id, child_id) => {
+              const body = { chore_id }
+              if (child_id) body.child_id = child_id
+              createAssignment(body).then(() => {
+                queryClient.invalidateQueries({ queryKey: ['assignments'] })
+              })
+            }}
+            onSchedule={(chore_id, child_id, frequency, day_of_week, day_of_month) => {
+              const body = { chore_id, child_id, frequency }
+              if (day_of_week !== undefined && day_of_week !== null) body.day_of_week = day_of_week
+              if (day_of_month !== undefined && day_of_month !== null) body.day_of_month = day_of_month
+              createSchedule(body).then(() => {
+                queryClient.invalidateQueries({ queryKey: ['chores'] })
+                queryClient.invalidateQueries({ queryKey: ['assignments'] })
+              })
+            }}
+            onDeleteSchedule={(id) => {
+              apiDeleteSchedule(id).then(() => {
+                queryClient.invalidateQueries({ queryKey: ['chores'] })
+              })
+            }}
+          />
         )}
       </div>
 
@@ -170,37 +162,27 @@ export default function ChoresTab() {
               No active assignments
             </div>
           ) : (
-            <div className="relative min-h-0 flex-1">
-              <div className="flex flex-col gap-2 overflow-y-auto h-full scrollbar-hide">
-                {filtered.map(a => (
-                  <AssignmentRow key={a.id} assignment={a} children={children} />
-                ))}
-              </div>
-              <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-slate-900 to-transparent" />
-            </div>
+            <OverflowFadePanel>
+              {filtered.map(a => (
+                <AssignmentRow key={a.id} assignment={a} children={children} />
+              ))}
+            </OverflowFadePanel>
           )}
         </div>
 
         {/* Unassigned Pool */}
-        <div className="flex flex-col gap-3 min-h-0 flex-1 max-h-60">
-          <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1 shrink-0">
-            Unassigned Pool {unassigned.length > 0 && `(${unassigned.length})`}
-          </h2>
-          {assignmentsLoading ? null : unassigned.length === 0 ? (
-            <div className="flex items-center justify-center h-16 text-white/30 text-sm">
-              No unassigned tasks
-            </div>
-          ) : (
-            <div className="relative min-h-0 flex-1">
-              <div className="flex flex-col gap-2 overflow-y-auto h-full scrollbar-hide">
-                {unassigned.map(a => (
-                  <UnassignedRow key={a.id} assignment={a} children={children} />
-                ))}
-              </div>
-              <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-slate-900 to-transparent" />
-            </div>
-          )}
-        </div>
+        {!assignmentsLoading && unassigned.length > 0 && (
+          <div className="flex flex-col gap-3 min-h-0 flex-1 max-h-60">
+            <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1 shrink-0">
+              Unassigned Pool ({unassigned.length})
+            </h2>
+            <OverflowFadePanel>
+              {unassigned.map(a => (
+                <UnassignedRow key={a.id} assignment={a} children={children} />
+              ))}
+            </OverflowFadePanel>
+          </div>
+        )}
 
       </div>
 
@@ -287,6 +269,73 @@ export default function ChoresTab() {
         </div>
       )}
 
+    </div>
+  )
+}
+
+
+function ChoreLibraryPanel({ chores, children, onTap, onEdit, onAssign, onSchedule, onDeleteSchedule }) {
+  const scrollRef = useRef(null)
+  const [overflows, setOverflows] = useState(false)
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const check = () => setOverflows(el.scrollHeight > el.clientHeight + 1)
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [chores.length])
+
+  return (
+    <div className="relative flex-1 min-h-0">
+      <div ref={scrollRef} className="grid grid-cols-2 gap-3 overflow-y-auto h-full scrollbar-hide">
+        {chores.map(chore => (
+          <ChoreTemplateCard
+            key={chore.id}
+            chore={chore}
+            children={children}
+            onTap={() => onTap(chore)}
+            onEdit={() => onEdit(chore.id)}
+            onAssign={(child_id) => onAssign(chore.id, child_id)}
+            onSchedule={(chore_id, child_id, frequency, day_of_week, day_of_month) =>
+              onSchedule(chore_id, child_id, frequency, day_of_week, day_of_month)
+            }
+            onDeleteSchedule={onDeleteSchedule}
+          />
+        ))}
+      </div>
+      {overflows && (
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900 to-transparent" />
+      )}
+    </div>
+  )
+}
+
+
+function OverflowFadePanel({ children }) {
+  const scrollRef = useRef(null)
+  const [overflows, setOverflows] = useState(false)
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const check = () => setOverflows(el.scrollHeight > el.clientHeight + 1)
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [children])
+
+  return (
+    <div className="relative min-h-0 flex-1">
+      <div ref={scrollRef} className="flex flex-col gap-2 overflow-y-auto h-full scrollbar-hide">
+        {children}
+      </div>
+      {overflows && (
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-slate-900 to-transparent" />
+      )}
     </div>
   )
 }

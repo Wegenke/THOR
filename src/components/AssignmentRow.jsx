@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { buildAvatarSrc } from '../utils/avatar'
-import { cancelAssignment, parentStartAssignment, parentPauseAssignment, reassignAssignment, unassignAssignment } from '../api/assignments'
+import { cancelAssignment, parentStartAssignment, unstartAssignment, parentPauseAssignment, reassignAssignment, unassignAssignment } from '../api/assignments'
 
 const STATUS_LABELS = {
   unassigned: 'Unassigned',
@@ -24,6 +24,7 @@ export default function AssignmentRow({ assignment, children }) {
 
   const collapse = () => setExpanded(false)
   const parentStart = useMutation({ mutationFn: () => parentStartAssignment(assignment.id), onSuccess: invalidate })
+  const unstart = useMutation({ mutationFn: () => unstartAssignment(assignment.id), onSuccess: invalidate })
   const cancel = useMutation({ mutationFn: () => cancelAssignment(assignment.id), onSuccess: invalidate })
   const parentPause = useMutation({ mutationFn: () => parentPauseAssignment(assignment.id), onSuccess: invalidate })
   const reassign = useMutation({
@@ -32,10 +33,11 @@ export default function AssignmentRow({ assignment, children }) {
   })
   const unassign = useMutation({ mutationFn: () => unassignAssignment(assignment.id), onSuccess: invalidate })
 
-  const busy = parentStart.isPending || cancel.isPending || parentPause.isPending || reassign.isPending || unassign.isPending
+  const busy = parentStart.isPending || unstart.isPending || cancel.isPending || parentPause.isPending || reassign.isPending || unassign.isPending
   const { status, chore_title, emoji, points, child_name, child_avatar } = assignment
 
   const canStart = status === 'assigned'
+  const canUnstart = ['in_progress', 'paused', 'parent_paused'].includes(status)
   const canCancel = ['assigned', 'rejected'].includes(status)
   const canPause = status === 'in_progress'
   const canReassign = ['assigned', 'rejected'].includes(status)
@@ -84,6 +86,13 @@ export default function AssignmentRow({ assignment, children }) {
             className="px-3 py-1.5 rounded-lg bg-orange-600/80 text-xs font-medium disabled:opacity-30 active:bg-orange-600"
           >
             Pause
+          </button>
+          <button
+            onClick={() => { collapse(); unstart.mutate() }}
+            disabled={!canUnstart || busy}
+            className="px-3 py-1.5 rounded-lg bg-yellow-600/80 text-xs font-medium disabled:opacity-30 active:bg-yellow-600"
+          >
+            Un-start
           </button>
           {children.filter(c => String(c.id) !== String(assignment.child_id)).map(child => (
             <button

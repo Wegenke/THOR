@@ -35,7 +35,8 @@ export default function ApprovalCard({ assignment }) {
 
   return (
     <>
-    <div ref={cardRef} className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
+    <div ref={cardRef} className="bg-white/15 rounded-xl p-4 flex flex-col gap-3 border-l-4 border-green-400/70">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-green-400/70">Chore Approval</span>
 
       <div className="flex items-center gap-3 px-3">
         <span className="text-2xl">{assignment.emoji}</span>
@@ -94,17 +95,17 @@ export default function ApprovalCard({ assignment }) {
             Reject
           </button>
           <button
-            onClick={() => dismiss.mutate()}
-            disabled={busy}
-            className="flex-1 py-2 rounded-lg bg-white/10 text-sm font-medium disabled:opacity-40 active:bg-white/20"
-          >
-            Dismiss
-          </button>
-          <button
             onClick={() => setShowComments(true)}
-            className="flex-1 py-2 rounded-lg bg-white/10 text-sm font-medium active:bg-white/20"
+            className="flex-1 py-2 rounded-lg bg-indigo-700/80 text-sm font-medium active:bg-indigo-700"
           >
             💬
+          </button>
+          <button
+            onClick={() => dismiss.mutate()}
+            disabled={busy}
+            className="py-2 px-3 rounded-lg bg-slate-600/60 text-sm font-medium disabled:opacity-40 active:bg-slate-600"
+          >
+            ✕
           </button>
         </div>
       )}

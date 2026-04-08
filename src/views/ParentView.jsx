@@ -4,7 +4,7 @@ import { useSwipeable } from 'react-swipeable'
 import { useAuth } from '../context/AuthContext'
 import { buildAvatarSrc } from '../utils/avatar'
 import { getParentDashboard } from '../api/dashboard'
-import { pauseAllActive, assignAssignment, cancelAssignment } from '../api/assignments'
+import { pauseAllActive, assignAssignment, cancelAssignment, unstartAssignment } from '../api/assignments'
 import { approveReward, rejectReward, approveRefund, rejectRefund } from '../api/rewards'
 import { useKboard } from '../hooks/useKboard'
 import ProfileSettingsModal from '../components/ProfileSettingsModal'
@@ -30,6 +30,18 @@ export default function ParentView() {
   const { user, logout } = useAuth()
   const [activeTab, setActiveTab] = useState('dashboard')
   const [showSettings, setShowSettings] = useState(false)
+  const scrollRef = useRef(null)
+  const [tabOverflows, setTabOverflows] = useState(false)
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const check = () => setTabOverflows(el.scrollHeight > el.clientHeight + 1)
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [activeTab])
 
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard', 'parent'],
@@ -80,7 +92,7 @@ export default function ParentView() {
 
       {/* Content */}
       <div className="relative flex-1 min-h-0">
-        <div className="h-full overflow-y-auto scrollbar-hide p-4" {...swipeHandlers}>
+        <div ref={scrollRef} className={`h-full p-4 ${activeTab === 'dashboard' ? 'overflow-hidden' : 'overflow-y-auto scrollbar-hide'}`} {...swipeHandlers}>
           {activeTab === 'dashboard' && <DashboardTab data={data} isLoading={isLoading} />}
           {activeTab === 'todo' && <ParentToDoTab />}
           {activeTab === 'rewards' && <ParentRewardsTab />}
@@ -88,7 +100,9 @@ export default function ParentView() {
           {activeTab === 'history' && <ParentHistoryTab />}
           {activeTab === 'users' && <ParentUsersTab />}
         </div>
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900 to-transparent" />
+        {activeTab !== 'dashboard' && tabOverflows && (
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900 to-transparent" />
+        )}
       </div>
 
     </div>
@@ -107,6 +121,7 @@ function DashboardTab({ data, isLoading }) {
   if (isLoading) return null
 
   const submissions    = data?.submittedAssignments ?? []
+  const active         = data?.activeAssignments ?? []
   const children       = data?.children ?? []
   const pendingRewards = data?.pendingRewards ?? []
   const unassigned     = data?.unassignedAssignments ?? []
@@ -120,81 +135,79 @@ function DashboardTab({ data, isLoading }) {
   }
   const refunds = Object.values(refundMap)
 
-  const allEmpty = submissions.length === 0 && pendingRewards.length === 0 && refunds.length === 0 && unassigned.length === 0
+  const requestCount = submissions.length + pendingRewards.length + refunds.length
 
   return (
     <div className="flex gap-4 h-full">
 
-      {/* Left: action queue */}
+      {/* Left: active chores */}
       <div className="flex-1 flex flex-col gap-5 min-w-0">
 
-        {allEmpty && (
-          <div className="flex items-center justify-center h-32 text-white/30 text-sm">
-            All caught up
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1">
+            Active Chores ({active.length})
+          </h2>
+          {active.length > 0 ? (
+            <ScrollFade className="grid grid-cols-3 gap-3 overflow-y-auto h-36 scrollbar-hide">
+              {active.map(a => <ActiveChoreCard key={a.id} assignment={a} onSuccess={invalidate} />)}
+            </ScrollFade>
+          ) : (
+            <div
+              className="h-36 flex items-center justify-center rounded-xl"
+              style={{ background: 'linear-gradient(to bottom left, rgba(20,184,166,0.15), rgba(255,255,255,0.08), rgba(168,85,247,0.15))' }}
+            >
+              <span className="text-2xl font-black text-white uppercase tracking-widest">No Active Chores</span>
+            </div>
+          )}
+        </section>
+
+        <section className="flex-1 min-h-0 flex flex-col gap-3">
+          <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1">
+            Productivity
+          </h2>
+          <div
+            className="flex-1 flex items-center justify-center rounded-xl border-2 border-dashed border-white/10"
+          >
+            <span className="text-white/20 text-lg font-medium tracking-wide">Coming Soon</span>
           </div>
-        )}
+        </section>
 
-        {submissions.length > 0 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1">
-              Chore Approvals ({submissions.length})
-            </h2>
-            <ScrollFade className="grid grid-cols-3 gap-3 overflow-y-auto max-h-72 scrollbar-hide">
-              {submissions.map(a => <ApprovalCard key={a.id} assignment={a} />)}
-            </ScrollFade>
-          </section>
-        )}
+      </div>
 
-        {pendingRewards.length > 0 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1">
-              Reward Requests ({pendingRewards.length})
-            </h2>
-            <ScrollFade className="grid grid-cols-3 gap-3 overflow-y-auto max-h-72 scrollbar-hide">
-              {pendingRewards.map(r => <DashRewardCard key={r.id} reward={r} onSuccess={invalidate} />)}
-            </ScrollFade>
-          </section>
-        )}
-
-        {refunds.length > 0 && (
-          <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1">
-              Refund Requests ({refunds.length})
-            </h2>
-            <ScrollFade className="grid grid-cols-3 gap-3 overflow-y-auto max-h-72 scrollbar-hide">
-              {refunds.map(r => <DashRefundCard key={`${r.reward_id}-${r.child_id}`} refund={r} onSuccess={invalidate} />)}
-            </ScrollFade>
-          </section>
-        )}
-
+      {/* Right: children, unassigned, requests */}
+      <div className="w-[28rem] flex flex-col gap-3 shrink-0 h-full min-h-0">
+        <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1">Children</h2>
+        <button
+          onClick={() => pauseAll.mutate()}
+          disabled={pauseAll.isPending}
+          className="py-3 rounded-xl bg-orange-600/80 font-medium text-sm disabled:opacity-40 active:bg-orange-600"
+        >
+          Pause All Active
+        </button>
+        {children.map(child => (
+          <ChildSummaryCard key={child.id} child={child} />
+        ))}
         {unassigned.length > 0 && (
-          <section className="flex flex-col gap-3">
+          <section className="flex flex-col gap-3 mt-3">
             <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1">
               Unassigned Chores ({unassigned.length})
             </h2>
-            <ScrollFade className="grid grid-cols-3 gap-3 overflow-y-auto max-h-72 scrollbar-hide">
+            <ScrollFade className="flex flex-col gap-2 overflow-y-auto max-h-45 scrollbar-hide">
               {unassigned.map(a => (
                 <DashUnassignedCard key={a.id} assignment={a} children={children} onSuccess={invalidate} />
               ))}
             </ScrollFade>
           </section>
         )}
-
-      </div>
-
-      {/* Right: children + pause all <w-82 may act up, revert to w-80>*/}
-      <div className="w-82 flex flex-col gap-3 shrink-0">
-        <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1">Children</h2>
-        {children.map(child => (
-          <ChildSummaryCard key={child.id} child={child} />
-        ))}
-        <button
-          onClick={() => pauseAll.mutate()}
-          disabled={pauseAll.isPending}
-          className="mt-2 py-3 rounded-xl bg-orange-600/80 font-medium text-sm disabled:opacity-40 active:bg-orange-600"
-        >
-          Pause All Active
-        </button>
+        {requestCount > 0 && (
+          <RequestsPanel
+            submissions={submissions}
+            pendingRewards={pendingRewards}
+            refunds={refunds}
+            invalidate={invalidate}
+            requestCount={requestCount}
+          />
+        )}
       </div>
 
     </div>
@@ -229,6 +242,110 @@ function ScrollFade({ children, className }) {
 }
 
 
+// ─── Dashboard Requests Panel ────────────────────────────────────────────────
+
+function RequestsPanel({ submissions, pendingRewards, refunds, invalidate, requestCount }) {
+  const scrollRef = useRef(null)
+  const [overflows, setOverflows] = useState(false)
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const check = () => setOverflows(el.scrollHeight > el.clientHeight + 1)
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [requestCount])
+
+  return (
+    <section className="flex flex-col gap-3 mt-3 flex-1 min-h-0">
+      <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1 shrink-0">
+        Requests ({requestCount})
+      </h2>
+      <div className="relative flex-1 min-h-0">
+        <div ref={scrollRef} className="absolute inset-0 flex flex-col gap-3 overflow-y-auto scrollbar-hide">
+          {submissions.map(a => <ApprovalCard key={a.id} assignment={a} />)}
+          {pendingRewards.map(r => <DashRewardCard key={r.id} reward={r} onSuccess={invalidate} />)}
+          {refunds.map(r => <DashRefundCard key={`${r.reward_id}-${r.child_id}`} refund={r} onSuccess={invalidate} />)}
+        </div>
+        {overflows && (
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-slate-900 to-transparent" />
+        )}
+      </div>
+    </section>
+  )
+}
+
+
+// ─── Dashboard Active Chore Card ────────────────────────────────────────────
+
+const ACTIVE_STATUS_LABELS = {
+  in_progress: 'In progress',
+  paused: 'Paused',
+  parent_paused: 'Paused by parent'
+}
+
+function ActiveChoreCard({ assignment, onSuccess }) {
+  const [confirming, setConfirming] = useState(false)
+  const confirmTimer = useRef(null)
+
+  const unstart = useMutation({
+    mutationFn: () => unstartAssignment(assignment.id),
+    onSuccess
+  })
+
+  const handleUnstart = () => {
+    if (confirming) {
+      clearTimeout(confirmTimer.current)
+      setConfirming(false)
+      unstart.mutate()
+    } else {
+      setConfirming(true)
+      confirmTimer.current = setTimeout(() => setConfirming(false), 3000)
+    }
+  }
+
+  useEffect(() => {
+    return () => clearTimeout(confirmTimer.current)
+  }, [])
+
+  const started = assignment.started_at ? new Date(assignment.started_at) : null
+  const startedLabel = started
+    ? `${String(started.getMonth() + 1).padStart(2, '0')}/${String(started.getDate()).padStart(2, '0')} ${String(started.getHours()).padStart(2, '0')}:${String(started.getMinutes()).padStart(2, '0')}`
+    : ''
+
+  return (
+    <div className="bg-white/15 rounded-xl p-4 flex items-stretch gap-3 h-28">
+      <div className="flex-1 flex items-center gap-3 min-w-0">
+        <img src={buildAvatarSrc(assignment.child_avatar)} alt={assignment.child_name} className="w-16 h-16 rounded-full" />
+        <span className="text-5xl">{assignment.emoji}</span>
+        <div className="min-w-0">
+          <div className="font-semibold text-xl leading-tight truncate">{assignment.chore_title}</div>
+          <div className="text-base text-white/40 mt-0.5">
+            {assignment.child_name} · {ACTIVE_STATUS_LABELS[assignment.status]}
+          </div>
+        </div>
+      </div>
+      <div className="w-[20%] shrink-0 flex flex-col items-center gap-1">
+        <div className="text-sm font-semibold text-orange-400">{startedLabel}</div>
+        <button
+          onClick={handleUnstart}
+          disabled={unstart.isPending}
+          className={`w-full flex-1 rounded-lg text-lg font-bold text-slate-900 disabled:opacity-40 transition-colors ${
+            confirming
+              ? 'bg-orange-600/80 active:bg-orange-600'
+              : 'bg-teal-400/80 active:bg-teal-400'
+          }`}
+        >
+          {confirming ? 'Confirm?' : 'Un-start'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+
 // ─── Dashboard Reward Request Card ───────────────────────────────────────────
 
 function DashRewardCard({ reward, onSuccess }) {
@@ -254,15 +371,8 @@ function DashRewardCard({ reward, onSuccess }) {
   const valid = points && Number(points) > 0 && Number(points) % 10 === 0
 
   return (
-    <div ref={cardRef} className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
-      <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="font-semibold leading-tight truncate">{reward.name}</span>
-        {reward.description && (
-          <span className="text-xs text-white/40 truncate">{reward.description}</span>
-        )}
-        <span className="text-xs text-white/30">{reward.created_by_name}</span>
-      </div>
-
+    <div ref={cardRef} className="bg-white/15 rounded-xl p-4 flex flex-col gap-2 border-l-4 border-amber-400/70">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400/70">Reward Request</span>
       {approving ? (
         <div className="flex items-center gap-2">
           <button
@@ -295,16 +405,25 @@ function DashRewardCard({ reward, onSuccess }) {
           >✕</button>
         </div>
       ) : (
-        <div className="flex gap-2">
-          <button
-            onClick={() => setApproving(true)}
-            className="flex-1 py-2 rounded-lg text-sm font-medium bg-green-600/80 active:bg-green-600"
-          >Approve</button>
-          <button
-            onClick={() => reject.mutate()}
-            disabled={reject.isPending}
-            className="flex-1 py-2 rounded-lg text-sm font-medium bg-rose-600/80 active:bg-rose-600 disabled:opacity-40"
-          >Reject</button>
+        <div className="flex items-center gap-3">
+          <div className="flex-1 flex flex-col gap-0.5 min-w-0">
+            <span className="font-semibold leading-tight truncate">{reward.name}</span>
+            {reward.description && (
+              <span className="text-xs text-white/40 truncate">{reward.description}</span>
+            )}
+            <span className="text-xs text-white/30">{reward.created_by_name}</span>
+          </div>
+          <div className="flex flex-col gap-1.5 shrink-0 w-20">
+            <button
+              onClick={() => setApproving(true)}
+              className="py-2 rounded-lg text-sm font-medium bg-green-600/80 active:bg-green-600"
+            >Approve</button>
+            <button
+              onClick={() => reject.mutate()}
+              disabled={reject.isPending}
+              className="py-2 rounded-lg text-sm font-medium bg-rose-600/80 active:bg-rose-600 disabled:opacity-40"
+            >Reject</button>
+          </div>
         </div>
       )}
     </div>
@@ -328,7 +447,7 @@ function DashUnassignedCard({ assignment, children, onSuccess }) {
   const busy = assign.isPending || cancel.isPending
 
   return (
-    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
+    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3 border-l-4 border-blue-600/70">
       <div className="flex items-start gap-3">
         <span className="text-2xl">{assignment.emoji}</span>
         <div className="flex-1 min-w-0">
@@ -350,7 +469,7 @@ function DashUnassignedCard({ assignment, children, onSuccess }) {
         <button
           onClick={() => cancel.mutate()}
           disabled={busy}
-          className="py-2 px-3 rounded-lg text-sm font-medium bg-white/10 active:bg-white/20 disabled:opacity-40"
+          className="py-2 px-3 rounded-lg text-sm font-medium bg-slate-600/60 active:bg-slate-600 disabled:opacity-40"
         >✕</button>
       </div>
     </div>
@@ -372,23 +491,26 @@ function DashRefundCard({ refund, onSuccess }) {
   })
 
   return (
-    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3">
-      <div className="flex flex-col gap-0.5 min-w-0">
-        <span className="font-semibold leading-tight truncate">{refund.reward_name}</span>
-        <span className="text-xs text-white/40">{refund.child_name}</span>
-      </div>
-      <span className="text-sm text-white/50">{refund.points} pts</span>
-      <div className="flex gap-2">
-        <button
-          onClick={() => approveR.mutate()}
-          disabled={approveR.isPending || rejectR.isPending}
-          className="flex-1 py-2 rounded-lg text-sm font-medium bg-green-600/80 active:bg-green-600 disabled:opacity-40"
-        >Approve</button>
-        <button
-          onClick={() => rejectR.mutate()}
-          disabled={rejectR.isPending || approveR.isPending}
-          className="flex-1 py-2 rounded-lg text-sm font-medium bg-rose-600/80 active:bg-rose-600 disabled:opacity-40"
-        >Reject</button>
+    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-2 border-l-4 border-rose-400/70">
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-400/70">Refund Request</span>
+      <div className="flex items-center gap-3">
+        <div className="flex-1 flex flex-col gap-0.5 min-w-0">
+          <span className="font-semibold leading-tight truncate">{refund.reward_name}</span>
+          <span className="text-xs text-white/40">{refund.child_name}</span>
+          <span className="text-sm text-white/50">{refund.points} pts</span>
+        </div>
+        <div className="flex flex-col gap-1.5 shrink-0 w-20">
+          <button
+            onClick={() => approveR.mutate()}
+            disabled={approveR.isPending || rejectR.isPending}
+            className="py-2 rounded-lg text-sm font-medium bg-green-600/80 active:bg-green-600 disabled:opacity-40"
+          >Refund</button>
+          <button
+            onClick={() => rejectR.mutate()}
+            disabled={rejectR.isPending || approveR.isPending}
+            className="py-2 rounded-lg text-sm font-medium bg-rose-600/80 active:bg-rose-600 disabled:opacity-40"
+          >Deny</button>
+        </div>
       </div>
     </div>
   )
