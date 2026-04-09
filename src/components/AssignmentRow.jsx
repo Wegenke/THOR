@@ -20,7 +20,10 @@ export default function AssignmentRow({ assignment, children }) {
   const [expanded, setExpanded] = useState(false)
   const cardRef = useRef(null)
   const queryClient = useQueryClient()
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['assignments'] })
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['assignments'] })
+    queryClient.invalidateQueries({ queryKey: ['dashboard', 'parent'] })
+  }
 
   const collapse = () => setExpanded(false)
   const parentStart = useMutation({ mutationFn: () => parentStartAssignment(assignment.id), onSuccess: invalidate })

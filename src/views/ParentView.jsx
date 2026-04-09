@@ -4,7 +4,7 @@ import { useSwipeable } from 'react-swipeable'
 import { useAuth } from '../context/AuthContext'
 import { buildAvatarSrc } from '../utils/avatar'
 import { getParentDashboard } from '../api/dashboard'
-import { pauseAllActive, assignAssignment, cancelAssignment, unstartAssignment } from '../api/assignments'
+import { pauseAllActive, unstartAssignment } from '../api/assignments'
 import { approveReward, rejectReward, approveRefund, rejectRefund } from '../api/rewards'
 import { useKboard } from '../hooks/useKboard'
 import ProfileSettingsModal from '../components/ProfileSettingsModal'
@@ -124,8 +124,6 @@ function DashboardTab({ data, isLoading }) {
   const active         = data?.activeAssignments ?? []
   const children       = data?.children ?? []
   const pendingRewards = data?.pendingRewards ?? []
-  const unassigned     = data?.unassignedAssignments ?? []
-
   // Group refund requests by (reward_id, child_id) and sum points
   const refundMap = {}
   for (const r of (data?.refundRequests ?? [])) {
@@ -148,7 +146,7 @@ function DashboardTab({ data, isLoading }) {
             Active Chores ({active.length})
           </h2>
           {active.length > 0 ? (
-            <ScrollFade className="grid grid-cols-3 gap-3 overflow-y-auto h-36 scrollbar-hide">
+            <ScrollFade className="grid grid-cols-2 gap-3 overflow-y-auto max-h-36 scrollbar-hide">
               {active.map(a => <ActiveChoreCard key={a.id} assignment={a} onSuccess={invalidate} />)}
             </ScrollFade>
           ) : (
@@ -175,7 +173,7 @@ function DashboardTab({ data, isLoading }) {
       </div>
 
       {/* Right: children, unassigned, requests */}
-      <div className="w-[28rem] flex flex-col gap-3 shrink-0 h-full min-h-0">
+      <div className="w-[22rem] flex flex-col gap-3 shrink-0 h-full min-h-0">
         <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1">Children</h2>
         <button
           onClick={() => pauseAll.mutate()}
@@ -187,18 +185,6 @@ function DashboardTab({ data, isLoading }) {
         {children.map(child => (
           <ChildSummaryCard key={child.id} child={child} />
         ))}
-        {unassigned.length > 0 && (
-          <section className="flex flex-col gap-3 mt-3">
-            <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1">
-              Unassigned Chores ({unassigned.length})
-            </h2>
-            <ScrollFade className="flex flex-col gap-2 overflow-y-auto max-h-45 scrollbar-hide">
-              {unassigned.map(a => (
-                <DashUnassignedCard key={a.id} assignment={a} children={children} onSuccess={invalidate} />
-              ))}
-            </ScrollFade>
-          </section>
-        )}
         {requestCount > 0 && (
           <RequestsPanel
             submissions={submissions}
@@ -319,7 +305,7 @@ function ActiveChoreCard({ assignment, onSuccess }) {
     <div className="bg-white/15 rounded-xl p-4 flex items-stretch gap-3 h-28">
       <div className="flex-1 flex items-center gap-3 min-w-0">
         <img src={buildAvatarSrc(assignment.child_avatar)} alt={assignment.child_name} className="w-16 h-16 rounded-full" />
-        <span className="text-5xl">{assignment.emoji}</span>
+        <span className="text-3xl">{assignment.emoji}</span>
         <div className="min-w-0">
           <div className="font-semibold text-xl leading-tight truncate">{assignment.chore_title}</div>
           <div className="text-base text-white/40 mt-0.5">
@@ -426,52 +412,6 @@ function DashRewardCard({ reward, onSuccess }) {
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-
-// ─── Dashboard Unassigned Chore Card ─────────────────────────────────────────
-
-function DashUnassignedCard({ assignment, children, onSuccess }) {
-  const assign = useMutation({
-    mutationFn: (child_id) => assignAssignment(assignment.id, child_id),
-    onSuccess
-  })
-
-  const cancel = useMutation({
-    mutationFn: () => cancelAssignment(assignment.id),
-    onSuccess
-  })
-
-  const busy = assign.isPending || cancel.isPending
-
-  return (
-    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3 border-l-4 border-blue-600/70">
-      <div className="flex items-start gap-3">
-        <span className="text-2xl">{assignment.emoji}</span>
-        <div className="flex-1 min-w-0">
-          <div className="font-semibold leading-tight truncate">{assignment.chore_title}</div>
-          <div className="text-xs text-white/40 mt-0.5">{assignment.points} pts</div>
-        </div>
-      </div>
-      <div className="flex gap-2 flex-wrap">
-        {children.map(child => (
-          <button
-            key={child.id}
-            onClick={() => assign.mutate(child.id)}
-            disabled={busy}
-            className="flex-1 py-2 rounded-lg text-sm font-medium bg-blue-600/80 active:bg-blue-600 disabled:opacity-40"
-          >
-            {child.nick_name || child.name}
-          </button>
-        ))}
-        <button
-          onClick={() => cancel.mutate()}
-          disabled={busy}
-          className="py-2 px-3 rounded-lg text-sm font-medium bg-slate-600/60 active:bg-slate-600 disabled:opacity-40"
-        >✕</button>
-      </div>
     </div>
   )
 }
