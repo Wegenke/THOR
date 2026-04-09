@@ -5,9 +5,10 @@ import { useAuth } from '../context/AuthContext'
 import { buildAvatarSrc } from '../utils/avatar'
 import { getParentDashboard } from '../api/dashboard'
 import { pauseAllActive, unstartAssignment } from '../api/assignments'
-import { approveReward, rejectReward, approveRefund, rejectRefund } from '../api/rewards'
-import { useKboard } from '../hooks/useKboard'
+import { getProfiles } from '../api/auth'
 import ProfileSettingsModal from '../components/ProfileSettingsModal'
+import RewardDetailModal from '../components/RewardDetailModal'
+import CreateRewardModal from '../components/CreateRewardModal'
 import ApprovalCard from '../components/ApprovalCard'
 import ChildSummaryCard from '../components/ChildSummaryCard'
 import ChoresTab from '../components/ChoresTab'
@@ -28,19 +29,30 @@ const TAB_IDS = TABS.map(t => t.id)
 
 export default function ParentView() {
   const { user, logout } = useAuth()
+  const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState('dashboard')
   const [showSettings, setShowSettings] = useState(false)
   const scrollRef = useRef(null)
   const [tabOverflows, setTabOverflows] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [showCreateReward, setShowCreateReward] = useState(false)
 
-  useLayoutEffect(() => {
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 300)
+    return () => clearTimeout(t)
+  }, [])
+
+  useEffect(() => {
     const el = scrollRef.current
     if (!el) return
     const check = () => setTabOverflows(el.scrollHeight > el.clientHeight + 1)
     check()
     const ro = new ResizeObserver(check)
     ro.observe(el)
-    return () => ro.disconnect()
+    const mo = new MutationObserver(check)
+    mo.observe(el, { childList: true, subtree: true })
+    el.addEventListener('scroll', check, { passive: true })
+    return () => { ro.disconnect(); mo.disconnect(); el.removeEventListener('scroll', check) }
   }, [activeTab])
 
   const { data, isLoading } = useQuery({
@@ -92,26 +104,48 @@ export default function ParentView() {
 
       {/* Content */}
       <div className="relative flex-1 min-h-0">
-        <div ref={scrollRef} className={`h-full p-4 ${activeTab === 'dashboard' ? 'overflow-hidden' : 'overflow-y-auto scrollbar-hide'}`} {...swipeHandlers}>
-          {activeTab === 'dashboard' && <DashboardTab data={data} isLoading={isLoading} />}
+        <div {...swipeHandlers} ref={(el) => { scrollRef.current = el; if (swipeHandlers.ref) swipeHandlers.ref(el) }} className={`h-full p-4 ${activeTab === 'dashboard' ? 'overflow-hidden' : 'overflow-y-auto scrollbar-hide'}`} style={mounted ? undefined : { pointerEvents: 'none' }}>
+          {activeTab === 'dashboard' && <DashboardTab data={data} isLoading={isLoading} onCreateReward={() => setShowCreateReward(true)} />}
           {activeTab === 'todo' && <ParentToDoTab />}
           {activeTab === 'rewards' && <ParentRewardsTab />}
           {activeTab === 'chores' && <ChoresTab />}
           {activeTab === 'history' && <ParentHistoryTab />}
           {activeTab === 'users' && <ParentUsersTab />}
         </div>
+        {activeTab === 'rewards' && (
+          <button
+            onClick={() => setShowCreateReward(true)}
+            className="absolute top-2 right-6 z-10 px-3 py-1 rounded-lg bg-indigo-600/70 text-sm font-medium active:bg-indigo-600"
+          >+ New Shared Reward</button>
+        )}
         {activeTab !== 'dashboard' && tabOverflows && (
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900 to-transparent" />
         )}
       </div>
 
+      {showCreateReward && (
+        <CreateRewardModal
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['rewards'] })
+            queryClient.invalidateQueries({ queryKey: ['dashboard', 'parent'] })
+          }}
+          onClose={() => setShowCreateReward(false)}
+        />
+      )}
+
     </div>
   )
 }
 
-function DashboardTab({ data, isLoading }) {
+function DashboardTab({ data, isLoading, onCreateReward }) {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['dashboard', 'parent'] })
+  const [rewardModal, setRewardModal] = useState(null)
+
+  const { data: profiles = [] } = useQuery({
+    queryKey: ['profiles'],
+    queryFn: getProfiles
+  })
 
   const pauseAll = useMutation({
     mutationFn: pauseAllActive,
@@ -134,6 +168,10 @@ function DashboardTab({ data, isLoading }) {
   const refunds = Object.values(refundMap)
 
   const requestCount = submissions.length + pendingRewards.length + refunds.length
+  const rewardInvalidate = () => {
+    invalidate()
+    queryClient.invalidateQueries({ queryKey: ['rewards'] })
+  }
 
   return (
     <div className="flex gap-4 h-full">
@@ -175,13 +213,21 @@ function DashboardTab({ data, isLoading }) {
       {/* Right: children, unassigned, requests */}
       <div className="w-[22rem] flex flex-col gap-3 shrink-0 h-full min-h-0">
         <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1">Children</h2>
-        <button
-          onClick={() => pauseAll.mutate()}
-          disabled={pauseAll.isPending}
-          className="py-3 rounded-xl bg-orange-600/80 font-medium text-sm disabled:opacity-40 active:bg-orange-600"
-        >
-          Pause All Active
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => pauseAll.mutate()}
+            disabled={pauseAll.isPending}
+            className="flex-1 py-3 rounded-xl bg-orange-600/80 font-medium text-sm disabled:opacity-40 active:bg-orange-600"
+          >
+            Pause All Active
+          </button>
+          <button
+            onClick={onCreateReward}
+            className="flex-1 py-3 rounded-xl bg-indigo-600/80 font-medium text-sm active:bg-indigo-600"
+          >
+            + Shared Reward
+          </button>
+        </div>
         {children.map(child => (
           <ChildSummaryCard key={child.id} child={child} />
         ))}
@@ -190,11 +236,22 @@ function DashboardTab({ data, isLoading }) {
             submissions={submissions}
             pendingRewards={pendingRewards}
             refunds={refunds}
-            invalidate={invalidate}
             requestCount={requestCount}
+            onRewardClick={(item, type) => setRewardModal({ item, type })}
           />
         )}
       </div>
+
+      {rewardModal && (
+        <RewardDetailModal
+          item={rewardModal.item}
+          type={rewardModal.type}
+          profiles={profiles}
+          onSuccess={rewardInvalidate}
+          onClose={() => setRewardModal(null)}
+        />
+      )}
+
 
     </div>
   )
@@ -230,7 +287,7 @@ function ScrollFade({ children, className }) {
 
 // ─── Dashboard Requests Panel ────────────────────────────────────────────────
 
-function RequestsPanel({ submissions, pendingRewards, refunds, invalidate, requestCount }) {
+function RequestsPanel({ submissions, pendingRewards, refunds, requestCount, onRewardClick }) {
   const scrollRef = useRef(null)
   const [overflows, setOverflows] = useState(false)
 
@@ -252,8 +309,8 @@ function RequestsPanel({ submissions, pendingRewards, refunds, invalidate, reque
       <div className="relative flex-1 min-h-0">
         <div ref={scrollRef} className="absolute inset-0 flex flex-col gap-3 overflow-y-auto scrollbar-hide">
           {submissions.map(a => <ApprovalCard key={a.id} assignment={a} />)}
-          {pendingRewards.map(r => <DashRewardCard key={r.id} reward={r} onSuccess={invalidate} />)}
-          {refunds.map(r => <DashRefundCard key={`${r.reward_id}-${r.child_id}`} refund={r} onSuccess={invalidate} />)}
+          {pendingRewards.map(r => <DashRewardCard key={r.id} reward={r} onClick={() => onRewardClick(r, 'pending')} />)}
+          {refunds.map(r => <DashRefundCard key={`${r.reward_id}-${r.child_id}`} refund={r} onClick={() => onRewardClick(r, 'refunds')} />)}
         </div>
         {overflows && (
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-slate-900 to-transparent" />
@@ -332,125 +389,39 @@ function ActiveChoreCard({ assignment, onSuccess }) {
 }
 
 
-// ─── Dashboard Reward Request Card ───────────────────────────────────────────
+// ─── Dashboard Reward Request Card (info-only) ─────────────────────────────
 
-function DashRewardCard({ reward, onSuccess }) {
-  const [approving, setApproving] = useState(false)
-  const [points, setPoints] = useState('')
-  const kbPoints = useKboard(points, setPoints, { mode: 'numeric' })
-  const cardRef = useRef(null)
-
-  useEffect(() => {
-    if (approving) cardRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [approving])
-
-  const approve = useMutation({
-    mutationFn: () => approveReward(reward.id, Number(points)),
-    onSuccess: () => { onSuccess(); setApproving(false); setPoints('') }
-  })
-
-  const reject = useMutation({
-    mutationFn: () => rejectReward(reward.id),
-    onSuccess
-  })
-
-  const valid = points && Number(points) > 0 && Number(points) % 10 === 0
-
+function DashRewardCard({ reward, onClick }) {
   return (
-    <div ref={cardRef} className="bg-white/15 rounded-xl p-4 flex flex-col gap-2 border-l-4 border-amber-400/70">
+    <div onClick={onClick} className="bg-white/15 rounded-xl p-4 flex flex-col gap-3 border-l-4 border-amber-400/70 cursor-pointer active:bg-white/20">
       <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-400/70">Reward Request</span>
-      {approving ? (
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setPoints(p => String(Math.max(0, (Number(p) || 0) - 10)))}
-            disabled={!points || Number(points) <= 0}
-            className="w-11 h-11 rounded-lg bg-rose-600/70 text-xl font-bold disabled:opacity-30 active:bg-rose-600 shrink-0"
-          >−</button>
-          <input
-            type="number"
-            inputMode="none"
-            value={points}
-            {...kbPoints}
-            placeholder="Pts"
-            className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-sm outline-none placeholder:text-white/30 text-center appearance-none"
-          />
-          <button
-            type="button"
-            onClick={() => setPoints(p => String((Number(p) || 0) + 10))}
-            className="w-11 h-11 rounded-lg bg-green-600/70 text-xl font-bold active:bg-green-600 shrink-0"
-          >+</button>
-          <button
-            onClick={() => approve.mutate()}
-            disabled={!valid || approve.isPending}
-            className="w-11 h-11 rounded-lg bg-green-600/80 text-xl font-bold disabled:opacity-40 active:bg-green-600"
-          >✓</button>
-          <button
-            onClick={() => { setApproving(false); setPoints('') }}
-            className="w-11 h-11 rounded-lg bg-white/10 text-xl font-bold active:bg-white/20"
-          >✕</button>
+      <div className="flex items-center gap-3 px-3">
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold leading-tight truncate">{reward.name}</div>
+          <span className="text-white/50 text-sm">{reward.created_by_name}</span>
         </div>
-      ) : (
-        <div className="flex items-center gap-3">
-          <div className="flex-1 flex flex-col gap-0.5 min-w-0">
-            <span className="font-semibold leading-tight truncate">{reward.name}</span>
-            {reward.description && (
-              <span className="text-xs text-white/40 truncate">{reward.description}</span>
-            )}
-            <span className="text-xs text-white/30">{reward.created_by_name}</span>
-          </div>
-          <div className="flex flex-col gap-1.5 shrink-0 w-20">
-            <button
-              onClick={() => setApproving(true)}
-              className="py-2 rounded-lg text-sm font-medium bg-green-600/80 active:bg-green-600"
-            >Approve</button>
-            <button
-              onClick={() => reject.mutate()}
-              disabled={reject.isPending}
-              className="py-2 rounded-lg text-sm font-medium bg-rose-600/80 active:bg-rose-600 disabled:opacity-40"
-            >Reject</button>
-          </div>
-        </div>
-      )}
+        <img src={buildAvatarSrc(reward.created_by_avatar)} alt={reward.created_by_name} className="w-10 h-10 rounded-full" />
+      </div>
     </div>
   )
 }
 
 
-// ─── Dashboard Refund Card ────────────────────────────────────────────────────
+// ─── Dashboard Refund Card (info-only) ──────────────────────────────────────
 
-function DashRefundCard({ refund, onSuccess }) {
-  const approveR = useMutation({
-    mutationFn: () => approveRefund(refund.reward_id, refund.child_id),
-    onSuccess
-  })
-
-  const rejectR = useMutation({
-    mutationFn: () => rejectRefund(refund.reward_id, refund.child_id),
-    onSuccess
-  })
-
+function DashRefundCard({ refund, onClick }) {
   return (
-    <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-2 border-l-4 border-rose-400/70">
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-400/70">Refund Request</span>
-      <div className="flex items-center gap-3">
-        <div className="flex-1 flex flex-col gap-0.5 min-w-0">
-          <span className="font-semibold leading-tight truncate">{refund.reward_name}</span>
-          <span className="text-xs text-white/40">{refund.child_name}</span>
-          <span className="text-sm text-white/50">{refund.points} pts</span>
+    <div onClick={onClick} className="bg-white/15 rounded-xl p-4 flex flex-col gap-3 border-l-4 border-rose-400/70 cursor-pointer active:bg-white/20">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-400/70">Refund Request</span>
+        <span className="text-white font-semibold text-sm whitespace-nowrap">{refund.points} pts</span>
+      </div>
+      <div className="flex items-center gap-3 px-3">
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold leading-tight truncate">{refund.reward_name}</div>
+          <span className="text-white/50 text-sm">{refund.child_name}</span>
         </div>
-        <div className="flex flex-col gap-1.5 shrink-0 w-20">
-          <button
-            onClick={() => approveR.mutate()}
-            disabled={approveR.isPending || rejectR.isPending}
-            className="py-2 rounded-lg text-sm font-medium bg-green-600/80 active:bg-green-600 disabled:opacity-40"
-          >Refund</button>
-          <button
-            onClick={() => rejectR.mutate()}
-            disabled={rejectR.isPending || approveR.isPending}
-            className="py-2 rounded-lg text-sm font-medium bg-rose-600/80 active:bg-rose-600 disabled:opacity-40"
-          >Deny</button>
-        </div>
+        <img src={buildAvatarSrc(refund.child_avatar)} alt={refund.child_name} className="w-10 h-10 rounded-full" />
       </div>
     </div>
   )

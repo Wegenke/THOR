@@ -23,7 +23,7 @@ export default function HistoryTab() {
   const [page, setPage] = useState(1)
   const { data, isLoading } = useQuery({
     queryKey: ['transactions', 'mine', page],
-    queryFn: () => getMyTransactions({ page })
+    queryFn: () => getMyTransactions({ page, limit: 9 })
   })
 
   if (isLoading) return null
@@ -63,14 +63,14 @@ export default function HistoryTab() {
       ))}
 
       {totalPages > 1 && (
-        <div className="flex justify-between items-center pt-2 px-1">
+        <div className="flex justify-center items-center gap-4 pt-4 pb-2">
           <button onClick={() => setPage(p => p - 1)} disabled={page === 1}
-            className="text-sm text-white/50 disabled:opacity-30 active:text-white">
+            className="text-base font-medium text-white/70 bg-white/10 disabled:opacity-30 active:bg-white/20 px-5 py-2.5 rounded-xl">
             ← Prev
           </button>
-          <span className="text-sm text-white/30">{page} / {totalPages}</span>
+          <span className="text-lg font-medium text-white/40">{page} / {totalPages}</span>
           <button onClick={() => setPage(p => p + 1)} disabled={page === totalPages}
-            className="text-sm text-white/50 disabled:opacity-30 active:text-white">
+            className="text-base font-medium text-white/70 bg-white/10 disabled:opacity-30 active:bg-white/20 px-5 py-2.5 rounded-xl">
             Next →
           </button>
         </div>

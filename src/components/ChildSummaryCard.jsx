@@ -47,8 +47,8 @@ export default function ChildSummaryCard({ child }) {
 
         <button
           onClick={() => setShowAdjust(true)}
-          className="py-1.5 rounded-lg bg-white/5 text-xs text-white/40 font-medium active:bg-white/10"
-        >Adjust Points</button>
+          className="py-1.5 rounded-lg bg-indigo-600/30 text-xs text-indigo-300 font-medium active:bg-indigo-600/50"
+        >AWARD / PENALIZE</button>
 
       </div>
 

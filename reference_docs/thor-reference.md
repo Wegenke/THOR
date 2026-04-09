@@ -307,35 +307,65 @@ Data: `GET /users`, `GET /users/pin_changes`
 
 Data: `GET /rewards?sort=progress` (all rewards with `contributed_total`), `GET /rewards/refund-requests`
 
-Six section pills: **Pending | Active | Funded | Refunds | Redeemed | Archived** — always 3-column grid regardless of item count. Pending, Funded, and Refunds pills show count badges when non-zero.
+**Layout: stacked horizontal rows (Netflix-style).** Section pill bar removed. All non-empty sections are stacked vertically, each with a section header and a horizontal row of up to 3 visible info-only cards. Empty sections do not render. The page scrolls vertically through sections; individual rows scroll horizontally when they overflow 3 cards.
 
-- **Pending**: reward requests awaiting parent decision
-  - Approve → inline expand: numeric input for `points_required` (virtual keyboard, must be multiple of 10) + ✓ / ✕; `PATCH /rewards/:id/approve`
-  - Reject → `PATCH /rewards/:id/reject` (reward → archived)
-  - Shows requester name (cross-referenced from profiles query)
-- **Active**: approved rewards currently being contributed to
-  - Progress bar (indigo) shows total contributions vs points_required
-  - Shared badge shown when `is_shared === true`
-  - Cancel & Refund All → `PATCH /rewards/:id/cancel` (auto-refunds all contributions, reward → archived)
-- **Funded**: fully funded, awaiting delivery
-  - Mark Redeemed → `POST /rewards/:id/redeem`
-- **Refunds**: pending refund requests from children (`GET /rewards/refund-requests`)
-  - Grouped by `(reward_id, child_id)` with points summed — approve/reject act on the full pair
-  - Approve Refund → `PATCH /rewards/:id/approve-refund/:childId` (returns points; reverts funded → active if needed)
-  - Reject Refund → `PATCH /rewards/:id/reject-refund/:childId` (resets `refund_requested` flag)
-- **Redeemed**: delivered rewards awaiting archival
-  - Archive → `PATCH /rewards/:id/archive` (violet button)
-- **Archived**: read-only history; dimmed cards, no actions
+**Horizontal row overflow behavior:**
+- Arrow buttons (‹ ›) appear at the left/right edges of a row only when there are more cards to scroll in that direction — completely hidden (not just disabled) when not needed
+- Peek cards: the rightmost/leftmost ~1/4 of the next/previous off-screen card is visible behind the arrow button as a visual hint of more content; peek cards are non-interactive
+- Horizontal scroll uses `scroll-snap-type: x mandatory` with `scroll-snap-align: start` so cards lock into position
+- Arrow buttons are overlaid on the peek card area
+
+**Card interaction: modal pattern.** Cards display info only — no action buttons on the cards themselves. Tapping a card opens a detail modal with full information and action buttons. This prevents accidental taps (e.g., accidentally redeeming a reward) in a scrollable touch context.
+
+**Sections and their card info / modal actions:**
+
+- **Pending**: card shows reward name, description, requester name, "Pending" badge. Modal actions: Approve (numeric input for `points_required`, virtual keyboard, must be multiple of 10) → `PATCH /rewards/:id/approve`; Reject → `PATCH /rewards/:id/reject` (reward → archived)
+- **Active**: card shows reward name, description, requester name, progress bar (indigo), contributed/remaining pts, "Shared" badge if applicable. Modal actions: Cancel & Refund All → `PATCH /rewards/:id/cancel` (auto-refunds all contributions, reward → archived)
+- **Funded**: card shows reward name, description, pts, "Funded" badge. Modal actions: Mark Redeemed → `POST /rewards/:id/redeem`
+- **Refunds**: card shows reward name, child name, pts, "Refund Requested" badge. Grouped by `(reward_id, child_id)` with points summed. Modal actions: Approve Refund → `PATCH /rewards/:id/approve-refund/:childId` (returns points; reverts funded → active if needed); Reject Refund → `PATCH /rewards/:id/reject-refund/:childId` (resets `refund_requested` flag)
+- **Redeemed**: card shows reward name, description, pts. Modal actions: Archive → `PATCH /rewards/:id/archive`
+- **Archived**: card shows reward name, description, pts, "Archived" badge; dimmed styling. Modal: read-only detail view, no actions
 
 ---
 
 ### Parent — History
 
-Data: `GET /transactions/` (all household, paginated), `GET /transactions/:id` (per child)
+Data: `GET /transactions/` (all household, paginated), `GET /transactions/:id` (per child), `GET /assignments/missed` (paginated)
 
-- Household-wide paginated transaction history
-- Filter by source (chore_approved, reward_contribution, reward_refund)
-- Tap a child name → drill into `GET /transactions/:id` for that child only
+**Layout: two-column split.** Left column (~60%) for Transactions, right column (~40%) for Missed Chores. Both independently paginated. Top tab toggle removed — both columns always visible. Full tab width (no `max-w-lg` constraint).
+
+**Column headers with filter icons:**
+- Left: `[funnel] Transactions (count)` — funnel on the left side
+- Right: `Missed Chores (count) [funnel]` — funnel on the right side
+- Funnel icons mirror to the outer edges of the layout
+- Active filter indicator: small dot badge on the funnel icon when any filter is active
+
+**Filter panels: slide-in from the corresponding edge.**
+- Left funnel opens a panel sliding in from the left edge
+- Right funnel opens a panel sliding in from the right edge
+- Animated slide transition (~200-300ms, tunable)
+- Backdrop (`bg-black/60`) behind panel, tap to close
+- ✕ button positioned closest to screen center (top-right on left panel, top-left on right panel)
+- Panel width: ~`w-72` to `w-80`
+- **Both panels are the same height** regardless of content — titles, child filter sections, and Clear Filters buttons all aligned at matching vertical positions
+
+**Transaction filter panel contents:**
+- Children section: vertical list of child rows (avatar + name, full-width tappable). Selected state: ring on avatar + row background highlight (`bg-white/10`). Tap to select, tap again to deselect. Tapping a different child switches the filter. No "All" button — deselecting returns to all.
+- Source section: vertical list of toggleable rows (emoji + label, full-width tappable). Same selected highlight.
+- Clear Filters button at the bottom — invisible when no filters are active
+- Filters apply live on tap (no apply button). Modal stays open for multi-filter adjustment. Close via backdrop tap or ✕.
+
+**Missed Chores filter panel contents:**
+- Children section: same avatar list as transactions panel, same behavior
+- No source section — empty space where it would be (maintains height match)
+- Clear Filters button at same vertical position as transactions panel
+- Future enhancement: date range filter
+
+**Transaction cards:** Same `TransactionRow` layout but narrower to fit ~60% column width. Reduced padding. Child name no longer clickable (drill-down replaced by filter panel). Shows emoji, title, child avatar + name, date, colored point amount.
+
+**Missed Chore cards:** Red-styled cards (`bg-red-600/10 border border-red-500/20`). "Missed" text removed from card (redundant — red styling + column header communicate status). Shows emoji, chore title, child avatar + name, date.
+
+**Pagination:** Each column has its own prev/next pagination at the bottom, independent of the other column. Limit adjusted to fit without scrolling past the pagination controls (8 per page for both).
 
 ---
 
@@ -604,8 +634,11 @@ Thor lives in its own dedicated repo (separate from Odin). Frontend and backend 
 ## Future Enhancements (Frontend)
 
 - **Push notifications** — alert children/parents when chores are approved, rejected, or assigned (requires PWA service worker + backend webhook/SSE)
-- **Gamification UI** — leaderboard, streaks, weekly bonus display
+- **Child leaderboard** — competitive points display on the child dashboard showing all children's points earned today, yesterday, this week, and this month. Consumes a new Odin aggregation endpoint (`GET /dashboard/leaderboard`). Low effort, high engagement — kids are already racing each other organically
+- **Gamification — badges & achievements** — UI to display earned badges/milestones on child dashboard. Parked until leaderboard ships and engagement is evaluated. Depends on backend schema (`badges`, `child_badges`) and award logic being built first
 - **Offline mode** — service worker caches dashboard data for display when Odin is unreachable
 - **Cursor disable** — for touchscreen-only kiosk, hide the mouse cursor via CSS
 - **Kiosk idle animation** — screensaver-style display cycling household stats when no one is logged in
 - **Endpoint audit** — verify every Odin backend endpoint is utilized in the Thor frontend; cross-reference the API Coverage table against actual component/hook usage to identify any missed or orphaned endpoints
+- **Productivity dashboard** — charts and visualizations in the parent dashboard Productivity section. Use a **Canvas-based** charting library (not SVG) — Canvas renders to a bitmap so performance is consistent regardless of data point count, avoids DOM bloat from SVG nodes, and is better suited for a tablet webview. SVG charts create a DOM element per data point which degrades on longer time ranges or multiple children. Library candidates: **Chart.js** (lightweight, Canvas-native, simple API) and **React-ApexCharts** (richer out-of-the-box chart types, Canvas rendering). Decision deferred until implementation.
+- **Modal interaction pattern audit** — the Parent Rewards tab is being refactored to use tap-to-open modals for all card actions instead of inline buttons. This prevents accidental taps in scrollable touch contexts. Review other views/tabs where this pattern may improve UX — candidates include: Parent Dashboard (ApprovalCard, DashRewardCard, DashRefundCard), Parent Chores tab (AssignmentRow actions), and any other card with inline action buttons in a scrollable area

@@ -1,4 +1,4 @@
-import { useState, useRef, useLayoutEffect } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSwipeable } from 'react-swipeable'
 import { useAuth } from '../context/AuthContext'
@@ -29,6 +29,12 @@ export default function ChildView() {
   const [showSettings, setShowSettings] = useState(false)
   const scrollRef = useRef(null)
   const [tabOverflows, setTabOverflows] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 300)
+    return () => clearTimeout(t)
+  }, [])
 
   useLayoutEffect(() => {
     const el = scrollRef.current
@@ -108,7 +114,7 @@ export default function ChildView() {
       )}
 
       <div className="relative flex-1 min-h-0">
-        <div ref={scrollRef} className="h-full overflow-y-auto scrollbar-hide p-4" {...swipeHandlers}>
+        <div ref={scrollRef} className="h-full overflow-y-auto scrollbar-hide p-4" style={mounted ? undefined : { pointerEvents: 'none' }} {...swipeHandlers}>
           {activeTab === 'dashboard' && <ChildDashboardTab />}
           {activeTab === 'chores' && <ChoresTab data={data} isLoading={isLoading} onRejectedModalChange={setOpenRejectedModals} />}
           {activeTab === 'claim' && <ClaimTab />}

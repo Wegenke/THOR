@@ -120,15 +120,15 @@ export default function ChoreCard({ assignment, onRejectedModalChange, activeRej
           >
             <span className="text-3xl">{emoji}</span>
             <div>
-              <div className="font-semibold text-lg leading-tight">{chore_title}</div>
-              <div className="text-white/50 text-sm mt-0.5">{STATUS_LABELS[displayStatus] ?? displayStatus}</div>
+              <div className="font-semibold text-base leading-tight">{chore_title}</div>
+              <div className="text-white/50 text-xs mt-0.5">{STATUS_LABELS[displayStatus] ?? displayStatus}</div>
             </div>
           </button>
           <div className="flex items-center gap-2 shrink-0">
             {recurrenceLabel && (
-              <div className="text-white/40 text-lg font-semibold">🔁 {recurrenceLabel}</div>
+              <div className="text-white/40 text-sm font-semibold">🔁 {recurrenceLabel}</div>
             )}
-            <div className="text-white text-3xl font-semibold whitespace-nowrap">{points} pts</div>
+            <div className="text-white text-2xl font-semibold whitespace-nowrap">{points} pts</div>
           </div>
         </div>
 
