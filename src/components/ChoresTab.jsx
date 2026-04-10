@@ -188,8 +188,8 @@ export default function ChoresTab() {
 
       {/* Create Chore Modal */}
       {showCreateForm && (
-        <div className={`fixed inset-0 z-50 flex justify-center bg-black/60 ${kb?.visible ? 'items-start pt-[15vh]' : 'items-center'}`} onClick={() => setShowCreateForm(false)}>
-          <div className="w-[48rem] bg-slate-800 rounded-2xl p-6" onClick={e => e.stopPropagation()}>
+        <div className={`fixed inset-0 z-50 flex justify-center bg-black/60 ${kb?.visible ? 'items-start pt-[15vh]' : 'items-center'}`} onPointerDown={() => setShowCreateForm(false)}>
+          <div className="w-[48rem] bg-slate-800 rounded-2xl p-6" onPointerDown={e => e.stopPropagation()}>
             <ChoreForm
               onSave={(data) => {
                 return createChore(data).then(() => {
@@ -208,8 +208,8 @@ export default function ChoresTab() {
         const chore = chores.find(c => c.id === editingChoreId)
         if (!chore) return null
         return (
-          <div className={`fixed inset-0 z-50 flex justify-center bg-black/60 ${kb?.visible ? 'items-start pt-[15vh]' : 'items-center'}`} onClick={() => setEditingChoreId(null)}>
-            <div className="w-[48rem] bg-slate-800 rounded-2xl p-6" onClick={e => e.stopPropagation()}>
+          <div className={`fixed inset-0 z-50 flex justify-center bg-black/60 ${kb?.visible ? 'items-start pt-[15vh]' : 'items-center'}`} onPointerDown={() => setEditingChoreId(null)}>
+            <div className="w-[48rem] bg-slate-800 rounded-2xl p-6" onPointerDown={e => e.stopPropagation()}>
               <ChoreForm
                 initial={chore}
                 onSave={(data) => {

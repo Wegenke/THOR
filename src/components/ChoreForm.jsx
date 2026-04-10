@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useKboard } from '../hooks/useKboard'
+import { useKboardContext } from '../context/KboardContext'
 import EmojiPicker from './EmojiPicker'
 
 export default function ChoreForm({ initial, onSave, onCancel }) {
@@ -11,9 +12,12 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
 
   const [emojiOpen, setEmojiOpen] = useState(false)
 
+  const kb = useKboardContext()
   const titleKb     = useKboard(title,          setTitle)
   const pointsKb    = useKboard(points,         setPoints,        { mode: 'numeric' })
   const descKb      = useKboard(description,    setDescription)
+
+  useEffect(() => () => kb?.dismiss(), [])
 
   const handleSave = () => {
     const data = { emoji, title, points: Number(points), description }
@@ -49,6 +53,7 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
         <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
+            onMouseDown={e => e.preventDefault()}
             onClick={() => setPoints(p => String(Math.max(0, (Number(p) || 0) - 10)))}
             disabled={!points || Number(points) <= 0}
             className="w-13 h-13 rounded-lg bg-rose-600/70 text-2xl font-bold disabled:opacity-30 active:bg-rose-600"
@@ -63,6 +68,7 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
           />
           <button
             type="button"
+            onMouseDown={e => e.preventDefault()}
             onClick={() => setPoints(p => String((Number(p) || 0) + 10))}
             className="w-13 h-13 rounded-lg bg-green-600/70 text-2xl font-bold active:bg-green-600"
           >+</button>
