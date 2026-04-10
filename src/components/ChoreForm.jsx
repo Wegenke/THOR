@@ -13,9 +13,17 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
   const [emojiOpen, setEmojiOpen] = useState(false)
 
   const kb = useKboardContext()
-  const titleKb     = useKboard(title,          setTitle)
-  const pointsKb    = useKboard(points,         setPoints,        { mode: 'numeric' })
-  const descKb      = useKboard(description,    setDescription)
+  const titleKbRaw  = useKboard(title,          setTitle)
+  const pointsKbRaw = useKboard(points,         setPoints,        { mode: 'numeric' })
+  const descKbRaw   = useKboard(description,    setDescription)
+
+  const closeEmojiOnFocus = (kbProps) => ({
+    ...kbProps,
+    onFocus: (...args) => { setEmojiOpen(false); kbProps.onFocus(...args) }
+  })
+  const titleKb  = closeEmojiOnFocus(titleKbRaw)
+  const pointsKb = closeEmojiOnFocus(pointsKbRaw)
+  const descKb   = closeEmojiOnFocus(descKbRaw)
 
   useEffect(() => () => kb?.dismiss(), [])
 
@@ -36,7 +44,7 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
       <div className="flex gap-3">
         <button
           type="button"
-          onClick={() => setEmojiOpen(o => !o)}
+          onClick={() => { kb?.dismiss(); setEmojiOpen(o => !o) }}
           className="w-16 bg-white/10 rounded-lg px-2 py-3 text-center text-3xl active:bg-white/20 shrink-0"
         >
           {emoji}
