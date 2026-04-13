@@ -187,10 +187,14 @@ function RecurrencePrompt({ childName, existingSchedules, onOneTime, onRecurring
 export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAssign, onSchedule, onDeleteSchedule }) {
   const [cooldowns, setCooldowns] = useState(new Set())
   const [promptChild, setPromptChild] = useState(null)
-  const cardRef = useRef(null)
+  const promptRef = useRef(null)
 
   useEffect(() => {
-    if (promptChild) cardRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    if (promptChild) {
+      requestAnimationFrame(() => {
+        promptRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+      })
+    }
   }, [promptChild])
 
   const handleOneTime = (child_id) => {
@@ -216,7 +220,7 @@ export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAs
 
   return (
     <div className="relative">
-      <div ref={cardRef} className="bg-white/15 rounded-xl p-4 flex flex-col gap-3 h-full">
+      <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3 h-full">
         <div className="flex items-start justify-between min-h-0">
           <div className="flex items-start gap-3 min-w-0 flex-1" onClick={onTap}>
             <span className="text-3xl shrink-0">{chore.emoji}</span>
@@ -268,7 +272,7 @@ export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAs
       </div>
 
       {promptChild && (
-        <div className="absolute left-2 right-2 top-full -mt-5 z-10">
+        <div ref={promptRef} className="absolute left-2 right-2 top-full -mt-5 z-10">
           <RecurrencePrompt
             childName={promptChild.name}
             existingSchedules={(chore.schedules || []).filter(s => s.child_id === promptChild.id)}

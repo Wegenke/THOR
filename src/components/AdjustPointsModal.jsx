@@ -14,7 +14,7 @@ export default function AdjustPointsModal({ child, onClose }) {
 
   const numPoints = Number(points) || 0
   const finalPoints = isReward ? numPoints : -numPoints
-  const valid = numPoints > 0 && numPoints % 5 === 0 && reason.trim().length > 0
+  const valid = numPoints > 0 && numPoints % 10 === 0 && reason.trim().length > 0
 
   const mutation = useMutation({
     mutationFn: () => createAdjustment({
@@ -58,7 +58,7 @@ export default function AdjustPointsModal({ child, onClose }) {
         {/* Points stepper */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setPoints(p => String(Math.max(0, (Number(p) || 0) - 5)))}
+            onClick={() => setPoints(p => String(Math.max(0, (Number(p) || 0) - 10)))}
             disabled={numPoints <= 0}
             className="w-12 h-12 rounded-lg bg-rose-600/70 text-xl font-bold disabled:opacity-30 active:bg-rose-600 shrink-0"
           >−</button>
@@ -71,12 +71,12 @@ export default function AdjustPointsModal({ child, onClose }) {
             className="flex-1 bg-white/10 rounded-lg px-3 py-3 text-sm outline-none placeholder:text-white/30 text-center appearance-none"
           />
           <button
-            onClick={() => setPoints(p => String((Number(p) || 0) + 5))}
+            onClick={() => setPoints(p => String((Number(p) || 0) + 10))}
             className="w-12 h-12 rounded-lg bg-green-600/70 text-xl font-bold active:bg-green-600 shrink-0"
           >+</button>
         </div>
-        {numPoints > 0 && numPoints % 5 !== 0 && (
-          <span className="text-xs text-amber-400">Must be in increments of 5</span>
+        {numPoints > 0 && numPoints % 10 !== 0 && (
+          <span className="text-xs text-amber-400">Must be in increments of 10</span>
         )}
 
         {/* Reason */}
