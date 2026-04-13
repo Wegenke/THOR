@@ -190,11 +190,13 @@ export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAs
   const promptRef = useRef(null)
 
   useEffect(() => {
-    if (promptChild) {
-      requestAnimationFrame(() => {
-        promptRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-      })
-    }
+    const el = promptRef.current
+    if (!promptChild || !el) return
+    const scroll = () => el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    requestAnimationFrame(scroll)
+    const ro = new ResizeObserver(scroll)
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [promptChild])
 
   const handleOneTime = (child_id) => {
