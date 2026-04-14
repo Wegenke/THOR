@@ -70,39 +70,53 @@ Odin must be running at `http://localhost:8080` for API calls to work.
 src/
   api/
     client.js           — axios instance (baseURL from VITE_API_URL, credentials: include)
-    auth.js             — getProfiles, login, logout, getSession
+    adjustments.js      — point adjustments (rewards/penalties)
     assignments.js      — assignment CRUD and state transitions
+    auth.js             — getProfiles, login, logout, getSession
     chores.js           — chore library CRUD
     dashboard.js        — child and parent dashboard aggregations
+    parentTasks.js      — parent to-do list management
     rewards.js          — reward CRUD and contributions
     schedules.js        — recurring chore schedule management
     setup.js            — first-time household setup
     transactions.js     — point transaction history
     users.js            — user management
   components/
-    ProfileSelector.jsx — profile grid for login screen
-    PinPad.jsx          — touch-friendly numeric keypad
-    LockoutTimer.jsx    — per-user countdown on 429 lockout
-    ChoreCard.jsx       — assignment tile with action buttons
-    ClaimCard.jsx       — available-to-claim assignment tile
-    ApprovalCard.jsx    — parent approve/reject UI
-    RewardCard.jsx      — reward management tile (parent)
-    MyRewardCard.jsx    — reward progress tile (child)
-    ChildSummaryCard.jsx — per-child summary on parent dashboard
-    CommentThread.jsx   — assignment comment display
-    ChoresTab.jsx       — parent chore library + assignments tab
-    HistoryTab.jsx      — child history tab
-    ParentHistoryTab.jsx — parent history tab
-    ParentRewardsTab.jsx — parent reward management tab
-    ParentUsersTab.jsx  — parent user management tab
-    RewardsTab.jsx      — child rewards tab
-    UserForm.jsx        — create/edit user form
-    AvatarPicker.jsx    — DiceBear style selector
+    AdjustPointsModal.jsx     — parent award/penalize points modal
+    ApprovalCard.jsx          — parent approve/reject UI
+    AssignmentRow.jsx         — assignment row in parent chores tab
     AvatarCustomizerModal.jsx — full avatar customization
+    AvatarPicker.jsx          — DiceBear style selector
+    ChildDashboardTab.jsx     — child dashboard tab (today, missed, rewards)
+    ChildSummaryCard.jsx      — per-child summary on parent dashboard
+    ChoreCard.jsx             — child assignment tile with action buttons
+    ChoreForm.jsx             — create/edit chore form
+    ChoreTemplateCard.jsx     — chore template card in parent library
+    ChoresTab.jsx             — parent chore library + assignments tab
+    ClaimCard.jsx             — available-to-claim assignment tile
+    CommentThread.jsx         — assignment comment display and input
+    CreateRewardModal.jsx     — parent create reward modal
+    EmojiPicker.jsx           — emoji selector for chore creation
+    HistoryTab.jsx            — child transaction history tab
+    LockoutTimer.jsx          — per-user countdown on 429 lockout
+    ParentHistoryTab.jsx      — parent history tab (transactions + missed)
+    ParentRewardsTab.jsx      — parent reward management tab
+    ParentToDoTab.jsx         — parent to-do list tab
+    ParentUsersTab.jsx        — parent user management tab
+    PinPad.jsx                — touch-friendly numeric keypad
+    ProfileSelector.jsx       — profile grid for login screen
     ProfileSettingsModal.jsx  — edit own nick_name, avatar, PIN
-    RequestRewardModal.jsx    — child reward request flow
     ReconnectingBanner.jsx    — shown when Odin is unreachable
-    VirtualKeyboard.jsx — on-screen keyboard for kiosk input
+    RequestRewardModal.jsx    — child reward request flow
+    RewardCard.jsx            — reward card (used by both parent and child views)
+    RewardDetailModal.jsx     — reward detail modal with actions
+    RewardsTab.jsx            — child rewards tab
+    TaskNotesModal.jsx        — notes modal for parent tasks
+    UnassignedRow.jsx         — unassigned pool row in parent chores tab
+    UnseenAdjustmentsModal.jsx — child login notification for point adjustments
+    UserForm.jsx              — create/edit user form
+    ViewAsChildModal.jsx      — parent view-as-child overlay
+    VirtualKeyboard.jsx       — on-screen keyboard for kiosk input
   context/
     AuthContext.jsx     — current user, login(), logout()
     KboardContext.jsx   — virtual keyboard state
@@ -140,6 +154,7 @@ reference_docs/         — thor-reference and odin API reference
 | Parent — User Management | Parent | Complete |
 | Parent — Reward Management | Parent | Complete |
 | Parent — History | Parent | Complete |
+| Parent — To-Do List | Parent | Complete |
 | Profile Settings (edit own nick_name, avatar, PIN) | Both | Complete |
 
 ---
@@ -148,22 +163,24 @@ reference_docs/         — thor-reference and odin API reference
 
 All data comes from Odin. Base path is set via `VITE_API_URL`.
 
-Key endpoints used by Thor:
+Thor uses session-based auth (cookie). Axios is configured with `credentials: 'include'` so the session cookie is sent automatically on every request.
 
-| Endpoint | Purpose |
+| Resource | Base Path |
 | --- | --- |
-| `GET /auth/profiles` | Profile grid for login screen |
-| `POST /auth/login` | PIN login |
-| `POST /auth/logout` | Destroys session |
-| `GET /auth/session` | Restore session on page reload |
-| `GET /dashboard/child` | Aggregated child dashboard data |
-| `GET /dashboard/parent` | Aggregated parent dashboard data |
-| `PATCH /assignments/:id/...` | Assignment state transitions |
-| `POST /rewards/:id/contribute` | Contribute points to a reward |
-| `GET /setup` | Check if setup is needed |
-| `POST /setup` | Create household + first parent |
+| Auth | `/auth` |
+| Users | `/users` |
+| Chores | `/chores` |
+| Assignments | `/assignments` |
+| Rewards | `/rewards` |
+| Transactions | `/transactions` |
+| Dashboard | `/dashboard` |
+| Schedules | `/schedules` |
+| Parent Tasks | `/parent-tasks` |
+| Adjustments | `/adjustments` |
+| Setup | `/setup` |
+| Health | `/health` |
 
-Full API reference: see [`reference_docs/odin-reference.md`](reference_docs/odin-reference.md).
+Full API reference with request/response details: see [`reference_docs/odin-reference.md`](reference_docs/odin-reference.md).
 
 ---
 

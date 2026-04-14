@@ -77,7 +77,7 @@ export default function ChoreCard({ assignment, onRejectedModalChange, activeRej
   const handleStart = () => {
     setPendingStart(true)
     pendingStartRef.current = true
-    setUndoCountdown(5)
+    setUndoCountdown(2)
     undoIntervalRef.current = setInterval(() => setUndoCountdown(prev => prev - 1), 1000)
   }
 
