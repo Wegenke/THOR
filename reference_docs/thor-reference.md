@@ -9,6 +9,7 @@
 | Login — profile selector | All | Complete |
 | Login — PIN pad | All | Complete |
 | Setup — first-time household setup | None (unauthenticated) | Complete |
+| Child — Dashboard | Child | Complete |
 | Child — My Chores | Child | Complete |
 | Child — Available to Claim | Child | Complete |
 | Child — Rewards | Child | Complete |
@@ -30,6 +31,9 @@
 | LockoutTimer | Complete |
 | AvatarPicker | Complete (AvatarCustomizerModal) |
 | ChoreCard | Complete |
+| SlimChoreCard | Complete (single-row chore card with one contextual button — used on child dashboard Today section) |
+| SlimClaimCard | Complete (single-row claim card with Claim button on the right — used on child dashboard pool section) |
+| FutureChoreCard | Complete (preview card for upcoming weekly/monthly schedules, single-row with "Start ahead" button — used on My Chores tab right column) |
 | ApprovalCard | Complete |
 | ChildSummaryCard | Complete |
 | CommentThread | Complete |
@@ -191,21 +195,44 @@ Shown when `GET /auth/profiles` returns an empty array (no household exists yet)
 
 ---
 
+### Child — Dashboard
+
+Primary data: `GET /dashboard/child/summary`
+
+Two-column layout:
+
+**Left column** — `RewardSection` (closest mine + closest shared, fixed height) / `CompletedSection` (4 most recent approvals, no scroll, no date window) / `MissedSection` (yesterday's missed chores, with comment thread).
+
+**Right column** — `TodaySection` / `WeekSection` / `PoolSection` (pool collapses entirely when empty so the other two stretch). All three use slim single-row cards:
+
+- `SlimChoreCard` for Today — single contextual button on the right (Start / Submit / Resume; "Waiting…" for submitted; "Paused — see My Chores" for parent_paused). Pause is intentionally absent — child must visit My Chores tab to pause.
+- `ScheduleCard` for This Week — read-only weekly schedule preview, filtered to days not yet passed AND no assignment generated this week.
+- `SlimClaimCard` for Pool — 3 oldest unassigned in the household with Claim button on the right.
+
+`thisMonth` schedule data is fetched but rendered on My Chores, not the dashboard.
+
+---
+
 ### Child — My Chores
 
-Primary data: `GET /dashboard/child` (single call returns balance, chores, reward progress)
+Primary data: `GET /dashboard/child` (active assignments, balance, reward progress) + `GET /dashboard/child/summary` (for the future panel's `thisWeek` + `thisMonth`)
 
-- Points balance prominent at top
-- List of active assignments (assigned, in_progress, paused, parent_paused, rejected) — each rendered as a ChoreCard
-- ChoreCard actions per status:
-  - `assigned` → Start
-  - `in_progress` → Pause, Submit
-  - `paused` → Resume, Submit
-  - `parent_paused` → Resume
-  - `rejected` → Resume (resume-rejected endpoint — preserves original started_at)
-  - `submitted` → pending badge only (no child action until reviewed)
-- Expand a ChoreCard → shows CommentThread (assignment comments)
-- Reward progress bars at bottom (funded % per active reward)
+60/40 horizontal split (mirroring the parent History tab layout):
+
+**Left (`flex-[3]`)** — `Active (n)` heading, then 2-column grid of `ChoreCard`s for the child's active assignments. ChoreCard actions per status:
+
+- `assigned` → Start
+- `in_progress` → Pause, Submit
+- `paused` → Resume, Submit
+- `parent_paused` → Resume
+- `rejected` → Resume (resume-rejected endpoint — preserves original started_at)
+- `submitted` → pending badge only (no child action until reviewed)
+
+Tapping a ChoreCard opens its description modal; the 💬 button opens the CommentThread modal.
+
+**Right (`flex-[2]`)** — `Coming up (n)` heading, then a list of `FutureChoreCard`s combining `thisWeek` + `thisMonth` schedule previews. Each card has a description-tap modal and a "Start ahead" button that calls `POST /assignments/start-ahead`. Daily schedules are intentionally excluded (start-ahead is for non-daily only).
+
+The "Coming up" panel filtering rule: a schedule is hidden once an assignment for that chore+child has been generated for the current period (week for weekly, month for monthly), regardless of status. This keeps the panel as "pure future work" — once a chore enters a period, it lives in Active until terminal.
 
 ---
 
@@ -638,7 +665,7 @@ Thor lives in its own dedicated repo (separate from Odin). Frontend and backend 
 - **Edit reward info** — edit button in RewardDetailModal (parent-only). Editable fields: title, description, points_required. No status restrictions — editable at any time regardless of funding state.
 - **Refund All (without canceling)** — parent action that returns all contributed points to children but keeps the reward active so contributions can restart. Covers price resets or wrong-reward contributions.
 - **Set to Funded** — parent manually marks a reward as funded regardless of contribution progress. Children keep their contributed points spent (no refund). "You've been working hard, I'm covering the rest."
-- **Parent-only reward notes** — notes/comments field on rewards visible only to parents. Use cases: store links (useful in Valkyrie, not kiosk), price tracking, purchase notes, where-to-buy context. Future: kiosk link viewer to open links from notes in a temporary browser window (deferred — depends on notes being built first, also relevant to Valkyrie).
+- **Parent-only reward notes** — notes/comments field on rewards visible only to parents. Use cases: store links (useful in Valkyrie, not kiosk), price tracking, purchase notes, where-to-buy context. Future: kiosk link viewer to open links from notes in a temporary browser window (deferred — depends on notes being built first, also relevant to Valkyrie). **TBD:** UX shape depends on backend schema choice — single field = textarea in edit modal; structured table = list view with add/edit/delete on each note.
 - **Login badge + post-login notifications** — burnt orange dot (16px, breathing scale animation) on top-right of login avatar cards when unseen notifications exist. Login flow: unseen adjustments modal (standalone, existing) → "What's New" modal (all other notifications — chore approved, rejected, reward status changes, one-time assignments) → dashboard. Two modals max, sequenced. "Got it" marks notifications seen. Badge and modal both query the same `notifications` table. Child triggers: chore approved, chore rejected, reward approved/funded/canceled, one-time assignment. Parent triggers: pending approvals, pending refund requests.
 - **Missed Chores early visibility** — update Missed Chores column to display overdue chores immediately (the day after assignment) instead of waiting for auto-dismiss. Consumes the expanded `getMissedAssignments` query (see odin-reference.md). No local logic change — backend returns both overdue and dismissed, frontend renders them the same way.
 - **History tab detail modal** — tap any history card (transaction or missed/dismissed) to open a modal showing full assignment details at top with comments list below. Single adaptive modal component — content adapts based on card type, no explicit title needed. Comments lazy-fetched on modal open by assignment ID (avoids bloating the history response).

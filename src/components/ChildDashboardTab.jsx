@@ -2,6 +2,8 @@ import { useState, useRef, useLayoutEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { getChildSummary } from '../api/dashboard'
 import CommentThread from './CommentThread'
+import SlimChoreCard from './SlimChoreCard'
+import SlimClaimCard from './SlimClaimCard'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -16,15 +18,6 @@ function formatRecurrence(frequency, day_of_week, day_of_month) {
     return `${label} (${day_of_month}${suffix})`
   }
   return label
-}
-
-const STATUS_LABELS = {
-  assigned: 'Ready to start',
-  in_progress: 'In progress',
-  paused: 'Paused',
-  parent_paused: 'Paused by parent',
-  submitted: 'Waiting for review',
-  rejected: 'Rejected'
 }
 
 function EmptyCard() {
@@ -71,7 +64,8 @@ export default function ChildDashboardTab() {
 
   if (isLoading) return null
 
-  const { missed = [], today = [], thisWeek = [], thisMonth = [], recentlyCompleted = [], closestMine, closestShared } = data || {}
+  const { missed = [], today = [], thisWeek = [], chorePoolOldest = [], recentlyCompleted = [], closestMine, closestShared } = data || {}
+  const poolHasItems = chorePoolOldest.length > 0
 
   return (
     <div className="flex gap-6 h-full">
@@ -88,7 +82,7 @@ export default function ChildDashboardTab() {
         </div>
       </div>
 
-      {/* Right: Today, This Week, This Month — each gets 1/3 */}
+      {/* Right: Today, This Week, Pool (only if pool has items) */}
       <div className="flex-1 flex flex-col gap-3 min-w-0 min-h-0">
         <div className="flex-1 flex flex-col min-h-0">
           <TodaySection assignments={today} />
@@ -96,9 +90,11 @@ export default function ChildDashboardTab() {
         <div className="flex-1 flex flex-col min-h-0">
           <WeekSection schedules={thisWeek} />
         </div>
-        <div className="flex-1 flex flex-col min-h-0">
-          <MonthSection schedules={thisMonth} />
-        </div>
+        {poolHasItems && (
+          <div className="flex-1 flex flex-col min-h-0">
+            <PoolSection assignments={chorePoolOldest} />
+          </div>
+        )}
       </div>
     </div>
   )
@@ -167,7 +163,7 @@ function TodaySection({ assignments }) {
         <EmptyCard />
       ) : (
         <ScrollFade className="flex flex-col gap-3 overflow-y-auto scrollbar-hide h-full">
-          {assignments.map(a => <SummaryCard key={a.id} assignment={a} />)}
+          {assignments.map(a => <SlimChoreCard key={a.id} assignment={a} />)}
         </ScrollFade>
       )}
     </section>
@@ -195,27 +191,23 @@ function WeekSection({ schedules }) {
 }
 
 
-// ─── This Month Section ──────────────────────────────────────────────────────
+// ─── Pool Section ────────────────────────────────────────────────────────────
 
-function MonthSection({ schedules }) {
+function PoolSection({ assignments }) {
   return (
     <section className="flex flex-col gap-2 min-h-0 flex-1">
       <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1 shrink-0">
-        📆 This Month ({schedules.length})
+        🏊 Chore Pool ({assignments.length})
       </h2>
-      {schedules.length === 0 ? (
-        <EmptyCard />
-      ) : (
-        <ScrollFade className="flex flex-col gap-3 overflow-y-auto scrollbar-hide h-full">
-          {schedules.map(s => <ScheduleCard key={s.id} schedule={s} />)}
-        </ScrollFade>
-      )}
+      <ScrollFade className="flex flex-col gap-3 overflow-y-auto scrollbar-hide h-full">
+        {assignments.map(a => <SlimClaimCard key={a.id} assignment={a} />)}
+      </ScrollFade>
     </section>
   )
 }
 
 
-// ─── Schedule Card (for week/month preview) ─────────────────────────────────
+// ─── Schedule Card (for week preview) ───────────────────────────────────────
 
 function ScheduleCard({ schedule }) {
   const { chore_title, emoji, points, frequency, day_of_week, day_of_month } = schedule
@@ -229,39 +221,6 @@ function ScheduleCard({ schedule }) {
         {recurrence && <div className="text-xs text-white/40 mt-0.5">🔁 {recurrence}</div>}
       </div>
       <span className="text-sm font-semibold text-white/70 shrink-0">{points} pts</span>
-    </div>
-  )
-}
-
-
-// ─── Summary Card (for today's assignments) ─────────────────────────────────
-
-function SummaryCard({ assignment }) {
-  const { chore_title, emoji, points, status, frequency, day_of_week, day_of_month } = assignment
-  const recurrence = formatRecurrence(frequency, day_of_week, day_of_month)
-
-  const statusColor = {
-    assigned: 'text-white/50',
-    in_progress: 'text-amber-300',
-    paused: 'text-orange-300',
-    parent_paused: 'text-orange-300',
-    submitted: 'text-sky-300',
-    rejected: 'text-red-300'
-  }
-
-  return (
-    <div className="bg-white/15 rounded-xl p-4 flex items-center gap-3">
-      <span className="text-2xl">{emoji}</span>
-      <div className="flex-1 min-w-0">
-        <div className="font-semibold text-sm truncate">{chore_title}</div>
-        <div className={`text-xs mt-0.5 ${statusColor[status] || 'text-white/50'}`}>
-          {STATUS_LABELS[status] ?? status}
-        </div>
-      </div>
-      <div className="flex items-center gap-2 shrink-0">
-        {recurrence && <span className="text-xs text-white/40">🔁 {recurrence}</span>}
-        <span className="text-sm font-semibold text-white/70">{points} pts</span>
-      </div>
     </div>
   )
 }
@@ -331,7 +290,7 @@ function CompletedSection({ assignments }) {
       {assignments.length === 0 ? (
         <EmptyCard />
       ) : (
-        <ScrollFade className="flex flex-col gap-3 overflow-y-auto scrollbar-hide h-full">
+        <div className="flex flex-col gap-3">
           {assignments.map(a => (
             <div key={a.id} className="bg-green-600/10 rounded-xl p-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
@@ -345,7 +304,7 @@ function CompletedSection({ assignments }) {
               </div>
             </div>
           ))}
-        </ScrollFade>
+        </div>
       )}
     </section>
   )

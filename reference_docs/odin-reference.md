@@ -99,6 +99,7 @@ For full backend documentation (database schema, business logic, architecture de
 | GET | /assignments/available | — | Unassigned assignments available to claim. Child-only |
 | GET | /assignments/missed | `page`, `limit`, `child_id` | Missed chores (dismissed + never started). Parent-only. Paginated |
 | POST | /assignments | `{ chore_id, child_id? }` | Create assignment. `child_id` omitted → unassigned. Parent-only |
+| POST | /assignments/start-ahead | `{ chore_id }` | Child-only. Creates a new `in_progress` row for a non-daily scheduled chore not yet generated this period. 409 if assignment already exists for the period. 400 for daily schedules |
 
 ### Comments
 
@@ -175,7 +176,7 @@ For full backend documentation (database schema, business logic, architecture de
 | Method | Path | Notes |
 |---|---|---|
 | GET | /dashboard/child | Active chores, balance, reward progress. Child-only |
-| GET | /dashboard/child/summary | Missed chores, recently completed, reward info. Child-only |
+| GET | /dashboard/child/summary | Returns `{missed, today, thisWeek, thisMonth, recentlyCompleted, chorePoolOldest, closestMine, closestShared}`. `thisWeek`/`thisMonth` filter to upcoming days only AND hide schedules whose period already has an assignment. `recentlyCompleted` capped at 4. `chorePoolOldest` is 3 oldest unassigned. Child-only |
 | GET | /dashboard/child/:child_id | View a child's dashboard as parent (read-only). Parent-only |
 | GET | /dashboard/parent | Pending approvals, children summaries, household stats. Parent-only |
 

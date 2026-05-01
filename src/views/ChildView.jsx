@@ -3,11 +3,12 @@ import { useQuery } from '@tanstack/react-query'
 import { useSwipeable } from 'react-swipeable'
 import { useAuth } from '../context/AuthContext'
 import { buildAvatarSrc } from '../utils/avatar'
-import { getChildDashboard } from '../api/dashboard'
+import { getChildDashboard, getChildSummary } from '../api/dashboard'
 import { getAvailableAssignments } from '../api/assignments'
 import { getUnseenAdjustments } from '../api/adjustments'
 import ChoreCard from '../components/ChoreCard'
 import ClaimCard from '../components/ClaimCard'
+import FutureChoreCard from '../components/FutureChoreCard'
 import RewardsTab from '../components/RewardsTab'
 import HistoryTab from '../components/HistoryTab'
 import ChildDashboardTab from '../components/ChildDashboardTab'
@@ -132,30 +133,59 @@ export default function ChildView() {
 
 function ChoresTab({ data, isLoading, onRejectedModalChange }) {
   const [dismissedRejected, setDismissedRejected] = useState(new Set())
+  const { data: summary } = useQuery({
+    queryKey: ['dashboard', 'child', 'summary'],
+    queryFn: getChildSummary
+  })
+
   if (isLoading) return null
+
   const assignments = data?.assignments ?? []
-  if (assignments.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-48 text-white/40">
-        <p>No chores assigned yet.</p>
-      </div>
-    )
-  }
+  const thisWeek = summary?.thisWeek ?? []
+  const thisMonth = summary?.thisMonth ?? []
+  const future = [...thisWeek, ...thisMonth]
+
   const rejectedIds = assignments.filter(a => a.status === 'rejected').map(a => a.id)
   const activeRejectedId = rejectedIds.find(id => !dismissedRejected.has(id)) ?? null
   const onRejectedDismissed = (id) => setDismissedRejected(prev => new Set(prev).add(id))
+
   return (
-    <div className="grid grid-cols-3 gap-3">
-      {assignments.map(a => (
-        <ChoreCard
-          key={a.id}
-          assignment={a}
-          onRejectedModalChange={onRejectedModalChange}
-          activeRejectedId={activeRejectedId}
-          onRejectedDismissed={onRejectedDismissed}
-          rejectedCount={rejectedIds.length}
-        />
-      ))}
+    <div className="flex gap-4 h-full">
+      <div className="flex-[3] min-w-0 min-h-0 flex flex-col gap-3">
+        <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1">
+          Active ({assignments.length})
+        </h2>
+        {assignments.length === 0 ? (
+          <div className="flex items-center justify-center h-48 text-white/40">
+            <p>No chores assigned yet.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {assignments.map(a => (
+              <ChoreCard
+                key={a.id}
+                assignment={a}
+                onRejectedModalChange={onRejectedModalChange}
+                activeRejectedId={activeRejectedId}
+                onRejectedDismissed={onRejectedDismissed}
+                rejectedCount={rejectedIds.length}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="flex-[2] min-w-0 min-h-0 flex flex-col gap-3">
+        <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1">
+          Coming up ({future.length})
+        </h2>
+        {future.length === 0 ? (
+          <div className="text-white/30 text-sm px-1">Nothing scheduled.</div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {future.map(s => <FutureChoreCard key={`${s.frequency}-${s.id}`} schedule={s} />)}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
