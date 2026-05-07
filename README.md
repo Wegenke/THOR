@@ -17,6 +17,7 @@ Thor is a frontend-only application — all data and business logic comes from t
 | HTTP client | Axios |
 | CSS | Tailwind CSS (@tailwindcss/vite) |
 | Avatars | DiceBear (@dicebear/core + @dicebear/collection) |
+| Animations | canvas-confetti (post-login points-awarded burst) |
 | Language | JavaScript |
 
 ---

@@ -154,16 +154,19 @@ function MissedSection({ assignments }) {
 // ─── Today Section ───────────────────────────────────────────────────────────
 
 function TodaySection({ assignments }) {
+  const sorted = [...assignments].sort((a, b) =>
+    (b.status === 'in_progress') - (a.status === 'in_progress')
+  )
   return (
     <section className="flex flex-col gap-2 min-h-0 flex-1">
       <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1 shrink-0">
         📋 Today ({assignments.length})
       </h2>
-      {assignments.length === 0 ? (
+      {sorted.length === 0 ? (
         <EmptyCard />
       ) : (
         <ScrollFade className="flex flex-col gap-3 overflow-y-auto scrollbar-hide h-full">
-          {assignments.map(a => <SlimChoreCard key={a.id} assignment={a} />)}
+          {sorted.map(a => <SlimChoreCard key={a.id} assignment={a} />)}
         </ScrollFade>
       )}
     </section>

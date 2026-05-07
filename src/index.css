@@ -13,6 +13,48 @@
   animation: spin-slow 4s linear infinite;
 }
 
+/* ── Adjustment Modal Animations ── */
+@keyframes modal-enter {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.animate-modal-enter {
+  animation: modal-enter 200ms ease-out forwards;
+}
+
+@keyframes shake-modal {
+  0%, 100% { transform: translateX(0); }
+  10%      { transform: translateX(-6px); }
+  20%      { transform: translateX(6px); }
+  30%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  50%      { transform: translateX(-4px); }
+  60%      { transform: translateX(4px); }
+  70%      { transform: translateX(-2px); }
+  80%      { transform: translateX(2px); }
+}
+.animate-modal-enter-shake {
+  animation: modal-enter 200ms ease-out forwards, shake-modal 500ms ease-in-out 200ms;
+}
+
+@keyframes card-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-card-enter {
+  animation: card-enter 250ms ease-out both;
+}
+
+@keyframes points-pop {
+  0%   { transform: scale(0.8); }
+  60%  { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+.animate-points-pop {
+  display: inline-block;
+  animation: points-pop 250ms ease-out both;
+}
+
 .bg-app-gradient {
   background:
     linear-gradient(135deg, rgba(10,42,42,0.97) 0%, rgba(20,12,20,0.97) 50%, rgba(51,16,5,0.97) 100%),
