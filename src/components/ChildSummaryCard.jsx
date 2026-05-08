@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { buildAvatarSrc } from '../utils/avatar'
 import AdjustPointsModal from './AdjustPointsModal'
-import ViewAsChildModal from './ViewAsChildModal'
+import ChildOverlay from './ChildOverlay'
 
-export default function ChildSummaryCard({ child }) {
+export default function ChildSummaryCard({ child, onNavigate }) {
   const avatarSrc = buildAvatarSrc(child.avatar)
   const [showAdjust, setShowAdjust] = useState(false)
   const [showView, setShowView] = useState(false)
@@ -56,7 +56,7 @@ export default function ChildSummaryCard({ child }) {
         <AdjustPointsModal child={child} onClose={() => setShowAdjust(false)} />
       )}
       {showView && (
-        <ViewAsChildModal child={child} onClose={() => setShowView(false)} />
+        <ChildOverlay child={child} onNavigate={onNavigate} onClose={() => setShowView(false)} />
       )}
     </>
   )

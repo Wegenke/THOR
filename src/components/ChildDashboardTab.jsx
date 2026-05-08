@@ -1,32 +1,20 @@
 import { useState, useRef, useLayoutEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '../context/AuthContext'
 import { getChildSummary } from '../api/dashboard'
 import CommentThread from './CommentThread'
 import SlimChoreCard from './SlimChoreCard'
 import SlimClaimCard from './SlimClaimCard'
-
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-
-function formatRecurrence(frequency, day_of_week, day_of_month) {
-  if (!frequency) return null
-  const label = frequency.charAt(0).toUpperCase() + frequency.slice(1)
-  if (frequency === 'weekly' && day_of_week != null) return `${label} (${DAY_NAMES[day_of_week]})`
-  if (frequency === 'monthly' && day_of_month != null) {
-    const suffix = day_of_month === 1 || day_of_month === 21 ? 'st'
-      : day_of_month === 2 || day_of_month === 22 ? 'nd'
-      : day_of_month === 3 || day_of_month === 23 ? 'rd' : 'th'
-    return `${label} (${day_of_month}${suffix})`
-  }
-  return label
-}
+import Leaderboard from './Leaderboard'
+import StatsBlock from './StatsBlock'
 
 function EmptyCard() {
   return (
     <div className="flex-1 flex items-center justify-center rounded-xl" style={{ background: 'linear-gradient(to bottom left, rgba(20,184,166,0.15), rgba(255,255,255,0.08), rgba(168,85,247,0.15))' }}>
-      <div className="flex flex-col items-center gap-4 h-[80%] justify-center">
-        <div className="text-xl text-amber-400 uppercase tracking-widest font-bold">ALL CAUGHT UP</div>
-        <span className="text-[8rem] leading-none animate-spin-slow">🥳</span>
-        <div className="text-xl text-amber-400 uppercase tracking-widest font-bold">GREAT WORK</div>
+      <div className="flex flex-col items-center gap-3 h-[80%] justify-center">
+        <div className="text-base text-amber-400 uppercase tracking-widest font-bold">ALL CAUGHT UP</div>
+        <span className="text-[5rem] leading-none animate-spin-slow">🥳</span>
+        <div className="text-base text-amber-400 uppercase tracking-widest font-bold">GREAT WORK</div>
       </div>
     </div>
   )
@@ -56,7 +44,8 @@ function ScrollFade({ children, className }) {
   )
 }
 
-export default function ChildDashboardTab() {
+export default function ChildDashboardTab({ onNavigate }) {
+  const { user } = useAuth()
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard', 'child', 'summary'],
     queryFn: getChildSummary
@@ -64,17 +53,20 @@ export default function ChildDashboardTab() {
 
   if (isLoading) return null
 
-  const { missed = [], today = [], thisWeek = [], chorePoolOldest = [], recentlyCompleted = [], closestMine, closestShared } = data || {}
+  const { missed = [], today = [], thisWeek = [], thisMonth = [], chorePoolOldest = [], recentlyCompleted = [], closestMine, closestShared } = data || {}
   const poolHasItems = chorePoolOldest.length > 0
 
   return (
     <div className="flex gap-6 h-full">
-      {/* Left: Rewards (fixed), Recently Completed (1/2), Missed (1/2) */}
+      {/* Left: Stats, Rewards, Completed (capped), Missed (fills remaining) */}
       <div className="flex-1 flex flex-col gap-3 min-w-0 min-h-0">
+        <div className="shrink-0">
+          <StatsBlock childId={user.id} />
+        </div>
         <div className="shrink-0">
           <RewardSection mine={closestMine} shared={closestShared} />
         </div>
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="shrink-0 flex flex-col max-h-[210px] min-h-0">
           <CompletedSection assignments={recentlyCompleted} />
         </div>
         <div className="flex-1 flex flex-col min-h-0">
@@ -82,13 +74,16 @@ export default function ChildDashboardTab() {
         </div>
       </div>
 
-      {/* Right: Today, This Week, Pool (only if pool has items) */}
+      {/* Right: Leaderboard, Today, Coming Up, Pool (only if pool has items) */}
       <div className="flex-1 flex flex-col gap-3 min-w-0 min-h-0">
+        <div className="shrink-0">
+          <Leaderboard currentUserId={user.id} />
+        </div>
         <div className="flex-1 flex flex-col min-h-0">
           <TodaySection assignments={today} />
         </div>
         <div className="flex-1 flex flex-col min-h-0">
-          <WeekSection schedules={thisWeek} />
+          <ComingUpSection weeklySchedules={thisWeek} monthlySchedules={thisMonth} onNavigate={onNavigate} />
         </div>
         {poolHasItems && (
           <div className="flex-1 flex flex-col min-h-0">
@@ -174,22 +169,56 @@ function TodaySection({ assignments }) {
 }
 
 
-// ─── This Week Section ───────────────────────────────────────────────────────
+// ─── Coming Up Section ───────────────────────────────────────────────────────
 
-function WeekSection({ schedules }) {
+function ComingUpSection({ weeklySchedules, monthlySchedules, onNavigate }) {
+  const today = new Date()
+  const todayDow = today.getDay()
+  const todayDom = today.getDate()
+
+  const weeklyUpcoming = weeklySchedules
+    .filter(s => s.day_of_week !== todayDow)
+    .map(s => ({ ...s, daysUntil: s.day_of_week - todayDow }))
+
+  const monthlyUpcoming = monthlySchedules
+    .filter(s => {
+      const delta = s.day_of_month - todayDom
+      return delta >= 1 && delta <= 7
+    })
+    .map(s => ({ ...s, daysUntil: s.day_of_month - todayDom }))
+
+  const items = [...weeklyUpcoming, ...monthlyUpcoming].sort(
+    (a, b) => a.daysUntil - b.daysUntil
+  )
+
   return (
     <section className="flex flex-col gap-2 min-h-0 flex-1">
       <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1 shrink-0">
-        📅 This Week ({schedules.length})
+        🔜 Coming Up ({items.length})
       </h2>
-      {schedules.length === 0 ? (
+      {items.length === 0 ? (
         <EmptyCard />
       ) : (
         <ScrollFade className="flex flex-col gap-3 overflow-y-auto scrollbar-hide h-full">
-          {schedules.map(s => <ScheduleCard key={s.id} schedule={s} />)}
+          {items.map(s => <ComingUpCard key={s.id} schedule={s} onNavigate={onNavigate} />)}
         </ScrollFade>
       )}
     </section>
+  )
+}
+
+function ComingUpCard({ schedule, onNavigate }) {
+  return (
+    <button
+      onClick={() => onNavigate?.('chores')}
+      className="bg-white/5 rounded-xl p-4 flex items-center gap-3 text-left active:bg-white/10"
+    >
+      <span className="text-2xl">{schedule.emoji}</span>
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold text-sm truncate text-white/80">{schedule.chore_title}</div>
+      </div>
+      <span className="text-sm font-semibold text-white/60 shrink-0">{schedule.points} pts</span>
+    </button>
   )
 }
 
@@ -206,25 +235,6 @@ function PoolSection({ assignments }) {
         {assignments.map(a => <SlimClaimCard key={a.id} assignment={a} />)}
       </ScrollFade>
     </section>
-  )
-}
-
-
-// ─── Schedule Card (for week preview) ───────────────────────────────────────
-
-function ScheduleCard({ schedule }) {
-  const { chore_title, emoji, points, frequency, day_of_week, day_of_month } = schedule
-  const recurrence = formatRecurrence(frequency, day_of_week, day_of_month)
-
-  return (
-    <div className="bg-white/10 rounded-xl p-4 flex items-center gap-3">
-      <span className="text-2xl">{emoji}</span>
-      <div className="flex-1 min-w-0">
-        <div className="font-semibold text-sm truncate">{chore_title}</div>
-        {recurrence && <div className="text-xs text-white/40 mt-0.5">🔁 {recurrence}</div>}
-      </div>
-      <span className="text-sm font-semibold text-white/70 shrink-0">{points} pts</span>
-    </div>
   )
 }
 
@@ -291,9 +301,9 @@ function CompletedSection({ assignments }) {
         ✅ Completed Recently ({assignments.length})
       </h2>
       {assignments.length === 0 ? (
-        <EmptyCard />
+        <div className="text-white/30 text-sm text-center py-2">No recent completions</div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <ScrollFade className="flex flex-col gap-3 overflow-y-auto scrollbar-hide h-full">
           {assignments.map(a => (
             <div key={a.id} className="bg-green-600/10 rounded-xl p-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
@@ -307,7 +317,7 @@ function CompletedSection({ assignments }) {
               </div>
             </div>
           ))}
-        </div>
+        </ScrollFade>
       )}
     </section>
   )

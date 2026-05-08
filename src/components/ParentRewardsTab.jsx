@@ -1,13 +1,15 @@
 import { useState, useRef, useLayoutEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { buildAvatarSrc } from '../utils/avatar'
 import { getProfiles } from '../api/auth'
 import { getRewards, getRefundRequests } from '../api/rewards'
 import RewardDetailModal from './RewardDetailModal'
+import FilterPanel, { FilterSection, FilterOption } from './FilterPanel'
 
 
 // ─── Main Orchestrator ──────────────────────────────────────────────────────
 
-export default function ParentRewardsTab() {
+export default function ParentRewardsTab({ filter = null, setFilter = () => {}, showFilterPanel = false, closeFilterPanel = () => {} }) {
   const queryClient = useQueryClient()
   const [modalItem, setModalItem] = useState(null)
 
@@ -28,15 +30,30 @@ export default function ParentRewardsTab() {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['rewards'] })
+    queryClient.invalidateQueries({ queryKey: ['dashboard', 'parent'] })
   }
 
   if (isLoading) return null
 
-  const pending  = rewards.filter(r => r.status === 'pending')
-  const active   = rewards.filter(r => r.status === 'active')
-  const funded   = rewards.filter(r => r.status === 'funded')
-  const redeemed = rewards.filter(r => r.status === 'redeemed')
-  const archived = rewards.filter(r => r.status === 'archived')
+  const matchesFilter = (reward) => {
+    if (filter === null) return true
+    if (filter === 'shared') return reward.is_shared === true
+    return reward.created_by === filter
+  }
+  const matchesRefundFilter = (refund) => {
+    if (filter === null) return true
+    if (filter === 'shared') {
+      const reward = rewards.find(r => r.id === refund.reward_id)
+      return reward?.is_shared === true
+    }
+    return refund.child_id === filter
+  }
+
+  const pending  = rewards.filter(r => r.status === 'pending').filter(matchesFilter)
+  const active   = rewards.filter(r => r.status === 'active').filter(matchesFilter)
+  const funded   = rewards.filter(r => r.status === 'funded').filter(matchesFilter)
+  const redeemed = rewards.filter(r => r.status === 'redeemed').filter(matchesFilter)
+  const archived = rewards.filter(r => r.status === 'archived').filter(matchesFilter)
 
   const refundMap = {}
   for (const r of refundRequests) {
@@ -44,7 +61,10 @@ export default function ParentRewardsTab() {
     if (!refundMap[key]) refundMap[key] = { ...r, points: 0 }
     refundMap[key].points += r.points
   }
-  const refunds = Object.values(refundMap)
+  const refunds = Object.values(refundMap).filter(matchesRefundFilter)
+
+  const childProfiles = profiles.filter(p => p.role === 'child')
+  const handleFilterSelect = (val) => setFilter(prev => prev === val ? null : val)
 
   const openModal = (item, type) => setModalItem({ item, type })
   const allEmpty = pending.length + active.length + funded.length + refunds.length + redeemed.length + archived.length === 0
@@ -127,6 +147,32 @@ export default function ParentRewardsTab() {
           onClose={() => setModalItem(null)}
         />
       )}
+
+      <FilterPanel
+        show={showFilterPanel}
+        onClose={closeFilterPanel}
+        side="right"
+        title="Reward Filters"
+        hasActiveFilters={filter !== null}
+        onClear={() => setFilter(null)}
+      >
+        <FilterSection title="Children">
+          {childProfiles.map(child => (
+            <FilterOption key={child.id} active={filter === child.id} onClick={() => handleFilterSelect(child.id)}>
+              <img
+                src={buildAvatarSrc(child.avatar)}
+                alt={child.nick_name || child.name}
+                className={`w-10 h-10 rounded-full transition-shadow ${filter === child.id ? 'ring-2 ring-indigo-400' : ''}`}
+              />
+              <span className="text-sm font-medium">{child.nick_name || child.name}</span>
+            </FilterOption>
+          ))}
+          <FilterOption active={filter === 'shared'} onClick={() => handleFilterSelect('shared')}>
+            <span className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-3xl overflow-hidden">🏠</span>
+            <span className="text-sm font-medium">Shared</span>
+          </FilterOption>
+        </FilterSection>
+      </FilterPanel>
 
     </div>
   )

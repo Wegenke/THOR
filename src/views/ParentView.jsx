@@ -6,6 +6,7 @@ import { buildAvatarSrc } from '../utils/avatar'
 import { getParentDashboard } from '../api/dashboard'
 import { pauseAllActive, unstartAssignment } from '../api/assignments'
 import { getProfiles } from '../api/auth'
+import { getOwnNotifications } from '../api/notifications'
 import ProfileSettingsModal from '../components/ProfileSettingsModal'
 import RewardDetailModal from '../components/RewardDetailModal'
 import CreateRewardModal from '../components/CreateRewardModal'
@@ -16,6 +17,7 @@ import ParentHistoryTab from '../components/ParentHistoryTab'
 import ParentUsersTab from '../components/ParentUsersTab'
 import ParentRewardsTab from '../components/ParentRewardsTab'
 import ParentToDoTab from '../components/ParentToDoTab'
+import WhatsNewModal from '../components/WhatsNewModal'
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -36,6 +38,35 @@ export default function ParentView() {
   const [tabOverflows, setTabOverflows] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [showCreateReward, setShowCreateReward] = useState(false)
+  const [rewardFilter, setRewardFilter] = useState(null)
+  const [showRewardFilter, setShowRewardFilter] = useState(false)
+  const [choresChildFilter, setChoresChildFilter] = useState('all')
+  const [historyTxChildId, setHistoryTxChildId] = useState(null)
+  const [historyMissedChildId, setHistoryMissedChildId] = useState(null)
+
+  const clearFilterForTab = (tab) => {
+    if (tab === 'rewards') setRewardFilter(null)
+    if (tab === 'chores') setChoresChildFilter('all')
+    if (tab === 'history') {
+      setHistoryTxChildId(null)
+      setHistoryMissedChildId(null)
+    }
+  }
+
+  const switchTab = (newTab, opts = {}) => {
+    if (newTab !== activeTab) clearFilterForTab(activeTab)
+    if (opts.childId !== undefined) {
+      if (newTab === 'rewards') setRewardFilter(opts.childId)
+      if (newTab === 'history') {
+        setHistoryTxChildId(opts.childId)
+        setHistoryMissedChildId(opts.childId)
+      }
+    }
+    if (opts.childName !== undefined && newTab === 'chores') {
+      setChoresChildFilter(opts.childName)
+    }
+    setActiveTab(newTab)
+  }
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 300)
@@ -60,10 +91,16 @@ export default function ParentView() {
     queryFn: getParentDashboard
   })
 
+  const { data: unseenNotifications = [] } = useQuery({
+    queryKey: ['notifications', 'unseen'],
+    queryFn: () => getOwnNotifications({ unseen: true })
+  })
+  const [whatsNewDismissed, setWhatsNewDismissed] = useState(false)
+
   const currentIndex = TAB_IDS.indexOf(activeTab)
   const swipeHandlers = useSwipeable({
-    onSwipedLeft: (e) => { if (e.event.target.closest?.('[data-no-swipe]')) return; if (currentIndex < TAB_IDS.length - 1) setActiveTab(TAB_IDS[currentIndex + 1]) },
-    onSwipedRight: (e) => { if (e.event.target.closest?.('[data-no-swipe]')) return; if (currentIndex > 0) setActiveTab(TAB_IDS[currentIndex - 1]) },
+    onSwipedLeft: (e) => { if (e.event.target.closest?.('[data-no-swipe]')) return; if (currentIndex < TAB_IDS.length - 1) switchTab(TAB_IDS[currentIndex + 1]) },
+    onSwipedRight: (e) => { if (e.event.target.closest?.('[data-no-swipe]')) return; if (currentIndex > 0) switchTab(TAB_IDS[currentIndex - 1]) },
     trackTouch: true,
     delta: 50
   })
@@ -84,7 +121,7 @@ export default function ParentView() {
           {TABS.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => switchTab(tab.id)}
               className={`px-5 py-3.5 rounded-lg text-base font-medium transition-colors
                 ${activeTab === tab.id ? 'bg-white/15 text-white' : 'text-white/40 active:text-white/70'}`}
             >
@@ -102,21 +139,41 @@ export default function ParentView() {
 
       {showSettings && <ProfileSettingsModal onClose={() => setShowSettings(false)} />}
 
+      {unseenNotifications.length > 0 && !whatsNewDismissed && (
+        <WhatsNewModal
+          notifications={unseenNotifications}
+          onDone={() => setWhatsNewDismissed(true)}
+        />
+      )}
+
       {/* Content */}
       <div className="relative flex-1 min-h-0">
         <div {...swipeHandlers} ref={(el) => { scrollRef.current = el; if (swipeHandlers.ref) swipeHandlers.ref(el) }} className={`h-full p-4 ${activeTab === 'dashboard' ? 'overflow-hidden' : 'overflow-y-auto scrollbar-hide'}`} style={mounted ? undefined : { pointerEvents: 'none' }}>
-          {activeTab === 'dashboard' && <DashboardTab data={data} isLoading={isLoading} onCreateReward={() => setShowCreateReward(true)} />}
+          {activeTab === 'dashboard' && <DashboardTab data={data} isLoading={isLoading} onCreateReward={() => setShowCreateReward(true)} onNavigate={switchTab} />}
           {activeTab === 'todo' && <ParentToDoTab />}
-          {activeTab === 'rewards' && <ParentRewardsTab />}
-          {activeTab === 'chores' && <ChoresTab />}
-          {activeTab === 'history' && <ParentHistoryTab />}
+          {activeTab === 'rewards' && (
+            <ParentRewardsTab
+              filter={rewardFilter}
+              setFilter={setRewardFilter}
+              showFilterPanel={showRewardFilter}
+              closeFilterPanel={() => setShowRewardFilter(false)}
+            />
+          )}
+          {activeTab === 'chores' && <ChoresTab childFilter={choresChildFilter} setChildFilter={setChoresChildFilter} />}
+          {activeTab === 'history' && <ParentHistoryTab txChildId={historyTxChildId} setTxChildId={setHistoryTxChildId} missedChildId={historyMissedChildId} setMissedChildId={setHistoryMissedChildId} />}
           {activeTab === 'users' && <ParentUsersTab />}
         </div>
         {activeTab === 'rewards' && (
-          <button
-            onClick={() => setShowCreateReward(true)}
-            className="absolute top-2 right-6 z-10 px-3 py-1 rounded-lg bg-indigo-600/70 text-sm font-medium active:bg-indigo-600"
-          >+ New Shared Reward</button>
+          <div className="absolute top-2 right-6 z-10 flex items-center gap-3">
+            <button onClick={() => setShowRewardFilter(true)} className="relative active:opacity-70">
+              <span className="text-lg">🔍</span>
+              {rewardFilter !== null && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-400 rounded-full" />}
+            </button>
+            <button
+              onClick={() => setShowCreateReward(true)}
+              className="px-3 py-1 rounded-lg bg-indigo-600/70 text-sm font-medium active:bg-indigo-600"
+            >+ New Shared Reward</button>
+          </div>
         )}
         {activeTab !== 'dashboard' && tabOverflows && (
           <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-slate-900 to-transparent" />
@@ -137,7 +194,7 @@ export default function ParentView() {
   )
 }
 
-function DashboardTab({ data, isLoading, onCreateReward }) {
+function DashboardTab({ data, isLoading, onCreateReward, onNavigate }) {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['dashboard', 'parent'] })
   const [rewardModal, setRewardModal] = useState(null)
@@ -158,6 +215,7 @@ function DashboardTab({ data, isLoading, onCreateReward }) {
   const active         = data?.activeAssignments ?? []
   const children       = data?.children ?? []
   const pendingRewards = data?.pendingRewards ?? []
+  const fundedRewards  = data?.fundedRewards ?? []
   // Group refund requests by (reward_id, child_id) and sum points
   const refundMap = {}
   for (const r of (data?.refundRequests ?? [])) {
@@ -167,7 +225,7 @@ function DashboardTab({ data, isLoading, onCreateReward }) {
   }
   const refunds = Object.values(refundMap)
 
-  const requestCount = submissions.length + pendingRewards.length + refunds.length
+  const requestCount = submissions.length + pendingRewards.length + refunds.length + fundedRewards.length
   const rewardInvalidate = () => {
     invalidate()
     queryClient.invalidateQueries({ queryKey: ['rewards'] })
@@ -229,12 +287,13 @@ function DashboardTab({ data, isLoading, onCreateReward }) {
           </button>
         </div>
         {children.map(child => (
-          <ChildSummaryCard key={child.id} child={child} />
+          <ChildSummaryCard key={child.id} child={child} onNavigate={onNavigate} />
         ))}
         {requestCount > 0 && (
           <RequestsPanel
             submissions={submissions}
             pendingRewards={pendingRewards}
+            fundedRewards={fundedRewards}
             refunds={refunds}
             requestCount={requestCount}
             onRewardClick={(item, type) => setRewardModal({ item, type })}
@@ -287,7 +346,7 @@ function ScrollFade({ children, className }) {
 
 // ─── Dashboard Requests Panel ────────────────────────────────────────────────
 
-function RequestsPanel({ submissions, pendingRewards, refunds, requestCount, onRewardClick }) {
+function RequestsPanel({ submissions, pendingRewards, fundedRewards, refunds, requestCount, onRewardClick }) {
   const scrollRef = useRef(null)
   const [overflows, setOverflows] = useState(false)
 
@@ -308,6 +367,7 @@ function RequestsPanel({ submissions, pendingRewards, refunds, requestCount, onR
       </h2>
       <div className="relative flex-1 min-h-0">
         <div ref={scrollRef} className="absolute inset-0 flex flex-col gap-3 overflow-y-auto scrollbar-hide">
+          {fundedRewards.map(r => <DashFundedCard key={r.id} reward={r} onClick={() => onRewardClick(r, 'funded')} />)}
           {submissions.map(a => <ApprovalCard key={a.id} assignment={a} />)}
           {pendingRewards.map(r => <DashRewardCard key={r.id} reward={r} onClick={() => onRewardClick(r, 'pending')} />)}
           {refunds.map(r => <DashRefundCard key={`${r.reward_id}-${r.child_id}`} refund={r} onClick={() => onRewardClick(r, 'refunds')} />)}
@@ -401,6 +461,44 @@ function DashRewardCard({ reward, onClick }) {
           <span className="text-white/50 text-sm">{reward.created_by_name}</span>
         </div>
         <img src={buildAvatarSrc(reward.created_by_avatar)} alt={reward.created_by_name} className="w-10 h-10 rounded-full" />
+      </div>
+    </div>
+  )
+}
+
+
+// ─── Dashboard Funded Reward Card (info-only) ──────────────────────────────
+
+function DashFundedCard({ reward, onClick }) {
+  const contributors = reward.contributors ?? []
+  const visible = contributors.slice(0, 3)
+  const overflow = contributors.length - visible.length
+
+  return (
+    <div onClick={onClick} className="bg-white/15 rounded-xl p-4 flex flex-col gap-3 border-l-4 border-indigo-400/70 cursor-pointer active:bg-white/20">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-indigo-400/70">Reward Funded</span>
+        <span className="px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 text-[10px] font-semibold uppercase tracking-wider">Ready to Redeem</span>
+      </div>
+      <div className="flex items-center gap-3 px-3">
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold leading-tight truncate">{reward.name}</div>
+        </div>
+        <div className="flex items-center -space-x-2 shrink-0">
+          {visible.map(c => (
+            <img
+              key={c.id}
+              src={buildAvatarSrc(c.avatar)}
+              alt={c.name}
+              className="w-9 h-9 rounded-full ring-2 ring-slate-800"
+            />
+          ))}
+          {overflow > 0 && (
+            <div className="w-9 h-9 rounded-full bg-white/20 ring-2 ring-slate-800 flex items-center justify-center text-xs font-semibold">
+              +{overflow}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

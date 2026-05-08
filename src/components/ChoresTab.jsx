@@ -10,6 +10,7 @@ import ChoreTemplateCard, { DAY_NAMES, formatSchedule } from './ChoreTemplateCar
 import ChoreForm from './ChoreForm'
 import AssignmentRow from './AssignmentRow'
 import UnassignedRow from './UnassignedRow'
+import FilterPanel, { FilterSection, FilterOption } from './FilterPanel'
 
 const LIVE_STATUSES = ['assigned', 'in_progress', 'paused', 'parent_paused', 'submitted', 'rejected']
 
@@ -23,7 +24,7 @@ const STATUS_FILTERS = [
 ]
 
 
-export default function ChoresTab() {
+export default function ChoresTab({ childFilter, setChildFilter }) {
   const queryClient = useQueryClient()
   const kb = useContext(KboardContext)
 
@@ -50,9 +51,15 @@ export default function ChoresTab() {
   const [viewingChore, setViewingChore] = useState(null)
   // Assignment filter state
   const [statusFilter, setStatusFilter] = useState('all')
-  const [childFilter, setChildFilter] = useState('all')
+  const [showAssignmentFilter, setShowAssignmentFilter] = useState(false)
+  const hasAssignmentFilters = statusFilter !== 'all' || childFilter !== 'all'
+  const clearAssignmentFilters = () => { setStatusFilter('all'); setChildFilter('all') }
 
   const unassigned = assignments.filter(a => a.status === 'unassigned')
+  const poolCountByChore = {}
+  for (const a of unassigned) {
+    poolCountByChore[a.chore_id] = (poolCountByChore[a.chore_id] || 0) + 1
+  }
   const filtered = assignments.filter(a => {
     if (!LIVE_STATUSES.includes(a.status)) return false
     if (statusFilter === 'paused') {
@@ -89,7 +96,8 @@ export default function ChoresTab() {
           <ChoreLibraryPanel
             chores={chores}
             children={children}
-            onTap={setViewingChore}
+            poolCountByChore={poolCountByChore}
+            onTap={(chore) => setViewingChore({ ...chore, pool_count: poolCountByChore[chore.id] || 0 })}
             onEdit={(id) => { setEditingChoreId(id); setShowCreateForm(false) }}
             onAssign={(chore_id, child_id) => {
               const body = { chore_id }
@@ -99,7 +107,8 @@ export default function ChoresTab() {
               })
             }}
             onSchedule={(chore_id, child_id, frequency, day_of_week, day_of_month) => {
-              const body = { chore_id, child_id, frequency }
+              const body = { chore_id, frequency }
+              if (child_id !== null && child_id !== undefined) body.child_id = child_id
               if (day_of_week !== undefined && day_of_week !== null) body.day_of_week = day_of_week
               if (day_of_month !== undefined && day_of_month !== null) body.day_of_month = day_of_month
               createSchedule(body).then(() => {
@@ -121,40 +130,14 @@ export default function ChoresTab() {
 
         {/* Active Assignments */}
         <div className="flex flex-col gap-3 min-h-0 flex-[2]">
-          <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider px-1 shrink-0">
-            Active Assignments {filtered.length > 0 && `(${filtered.length})`}
-          </h2>
-
-          {/* Status filter */}
-          <div className="flex gap-1 flex-wrap px-1 shrink-0">
-            {STATUS_FILTERS.map(f => (
-              <button
-                key={f.id}
-                onClick={() => setStatusFilter(f.id)}
-                className={`text-xs px-2 py-1 rounded-full ${statusFilter === f.id ? 'bg-white/15 text-white' : 'bg-white/5 text-white/40 active:text-white/70'}`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Child filter */}
-          <div className="flex gap-1 flex-wrap px-1 shrink-0">
-            <button
-              onClick={() => setChildFilter('all')}
-              className={`text-xs px-2 py-1 rounded-full ${childFilter === 'all' ? 'bg-white/15 text-white' : 'bg-white/5 text-white/40 active:text-white/70'}`}
-            >
-              All
+          <div className="flex items-center gap-2 px-1 shrink-0">
+            <h2 className="text-sm font-medium text-white/40 uppercase tracking-wider flex-1">
+              Active Assignments {filtered.length > 0 && `(${filtered.length})`}
+            </h2>
+            <button onClick={() => setShowAssignmentFilter(true)} className="relative active:opacity-70">
+              <span className="text-lg">🔍</span>
+              {hasAssignmentFilters && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-indigo-400 rounded-full" />}
             </button>
-            {children.map(child => (
-              <button
-                key={child.id}
-                onClick={() => setChildFilter(child.name)}
-                className={`text-xs px-2 py-1 rounded-full ${childFilter === child.name ? 'bg-white/15 text-white' : 'bg-white/5 text-white/40 active:text-white/70'}`}
-              >
-                {child.name}
-              </button>
-            ))}
           </div>
 
           {assignmentsLoading ? null : filtered.length === 0 ? (
@@ -185,6 +168,39 @@ export default function ChoresTab() {
         )}
 
       </div>
+
+      {/* Active Assignments filter panel */}
+      <FilterPanel
+        show={showAssignmentFilter}
+        onClose={() => setShowAssignmentFilter(false)}
+        side="right"
+        title="Assignment Filters"
+        hasActiveFilters={hasAssignmentFilters}
+        onClear={clearAssignmentFilters}
+      >
+        <FilterSection title="Status">
+          {STATUS_FILTERS.map(f => (
+            <FilterOption key={f.id} active={statusFilter === f.id} onClick={() => setStatusFilter(f.id)}>
+              <span className="text-sm font-medium">{f.label}</span>
+            </FilterOption>
+          ))}
+        </FilterSection>
+        <FilterSection title="Children">
+          <FilterOption active={childFilter === 'all'} onClick={() => setChildFilter('all')}>
+            <span className="text-sm font-medium">All</span>
+          </FilterOption>
+          {children.map(child => (
+            <FilterOption key={child.id} active={childFilter === child.name} onClick={() => setChildFilter(child.name)}>
+              <img
+                src={buildAvatarSrc(child.avatar)}
+                alt={child.nick_name || child.name}
+                className={`w-10 h-10 rounded-full transition-shadow ${childFilter === child.name ? 'ring-2 ring-indigo-400' : ''}`}
+              />
+              <span className="text-sm font-medium">{child.nick_name || child.name}</span>
+            </FilterOption>
+          ))}
+        </FilterSection>
+      </FilterPanel>
 
       {/* Create Chore Modal */}
       {showCreateForm && (
@@ -231,12 +247,21 @@ export default function ChoresTab() {
           onClick={() => setViewingChore(null)}
         >
           <div className="bg-slate-800 rounded-2xl p-10 w-[48rem] flex flex-col gap-5" onClick={e => e.stopPropagation()}>
-            <div className="text-5xl">{viewingChore.emoji}</div>
+            <div className="flex items-start justify-between gap-3">
+              <div className="text-5xl">{viewingChore.emoji}</div>
+              {viewingChore.pool_count > 0 && (
+                <span className="px-3 py-1 rounded-full bg-amber-600/30 text-amber-200 text-sm font-semibold whitespace-nowrap">
+                  🏊 Currently in Pool: {viewingChore.pool_count}
+                </span>
+              )}
+            </div>
             <div className="text-2xl font-semibold">{viewingChore.title}</div>
             {viewingChore.description && (
               <div className="text-white/60 text-base">{viewingChore.description}</div>
             )}
-            <div className="text-white font-semibold text-lg">{viewingChore.points} pts</div>
+            <div className="text-white font-semibold text-lg">
+              {viewingChore.points} pts{viewingChore.team_chore && <span className="text-white/50 text-base font-normal"> each</span>}
+            </div>
             <ScheduleManager
               schedules={viewingChore.schedules || []}
               children={children}
@@ -274,7 +299,7 @@ export default function ChoresTab() {
 }
 
 
-function ChoreLibraryPanel({ chores, children, onTap, onEdit, onAssign, onSchedule, onDeleteSchedule }) {
+function ChoreLibraryPanel({ chores, children, poolCountByChore = {}, onTap, onEdit, onAssign, onSchedule, onDeleteSchedule }) {
   const scrollRef = useRef(null)
   const [overflows, setOverflows] = useState(false)
 
@@ -290,12 +315,13 @@ function ChoreLibraryPanel({ chores, children, onTap, onEdit, onAssign, onSchedu
 
   return (
     <div className="relative flex-1 min-h-0">
-      <div ref={scrollRef} className="grid grid-cols-2 gap-3 overflow-y-auto h-full scrollbar-hide">
+      <div ref={scrollRef} className="grid grid-cols-2 gap-3 overflow-y-auto h-full scrollbar-hide items-start">
         {chores.map(chore => (
           <ChoreTemplateCard
             key={chore.id}
             chore={chore}
             children={children}
+            poolCount={poolCountByChore[chore.id] || 0}
             onTap={() => onTap(chore)}
             onEdit={() => onEdit(chore.id)}
             onAssign={(child_id) => onAssign(chore.id, child_id)}
@@ -352,15 +378,17 @@ function ScheduleManager({ schedules, children, onUpdate, onDelete }) {
     <div className="flex flex-col gap-3">
       <div className="text-sm text-white/40 uppercase tracking-wide">Recurring Schedules</div>
       {schedules.map(s => {
-        const child = children.find(c => c.id === s.child_id)
+        const isPool = s.child_id === null
+        const child = isPool ? null : children.find(c => c.id === s.child_id)
         const isEditing = editingId === s.id
+        const label = isPool ? 'Pool' : (child?.name || '?')
 
         if (isEditing) {
           return (
             <ScheduleEditRow
               key={s.id}
               schedule={s}
-              childName={child?.name || '?'}
+              childName={label}
               onSave={(data) => { onUpdate(s.id, data); setEditingId(null) }}
               onCancel={() => setEditingId(null)}
             />
@@ -369,9 +397,13 @@ function ScheduleManager({ schedules, children, onUpdate, onDelete }) {
 
         return (
           <div key={s.id} className="bg-white/5 rounded-lg px-5 py-4 flex items-center gap-3">
-            {child?.avatar && <img src={buildAvatarSrc(child.avatar)} className="w-8 h-8 rounded-full" />}
-            <span className="text-base font-medium">{child?.name || '?'}</span>
-            <span className="text-sm text-purple-300 bg-purple-600/30 px-3 py-1 rounded-full">{formatSchedule(s)}</span>
+            {isPool ? (
+              <span className="w-8 h-8 rounded-full bg-amber-600/40 flex items-center justify-center text-base">🏊</span>
+            ) : (
+              child?.avatar && <img src={buildAvatarSrc(child.avatar)} className="w-8 h-8 rounded-full" />
+            )}
+            <span className="text-base font-medium">{label}</span>
+            <span className={`text-sm px-3 py-1 rounded-full ${isPool ? 'text-amber-300 bg-amber-600/30' : 'text-purple-300 bg-purple-600/30'}`}>{formatSchedule(s)}</span>
             <span className={`text-sm px-3 py-1 rounded-full ${s.active ? 'bg-green-600/30 text-green-300' : 'bg-white/10 text-white/40'}`}>
               {s.active ? 'Active' : 'Paused'}
             </span>

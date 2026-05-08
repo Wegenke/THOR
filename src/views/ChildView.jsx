@@ -6,6 +6,7 @@ import { buildAvatarSrc } from '../utils/avatar'
 import { getChildDashboard, getChildSummary } from '../api/dashboard'
 import { getAvailableAssignments } from '../api/assignments'
 import { getUnseenAdjustments } from '../api/adjustments'
+import { getOwnNotifications } from '../api/notifications'
 import ChoreCard from '../components/ChoreCard'
 import ClaimCard from '../components/ClaimCard'
 import FutureChoreCard from '../components/FutureChoreCard'
@@ -14,6 +15,7 @@ import HistoryTab from '../components/HistoryTab'
 import ChildDashboardTab from '../components/ChildDashboardTab'
 import ProfileSettingsModal from '../components/ProfileSettingsModal'
 import UnseenAdjustmentsModal from '../components/UnseenAdjustmentsModal'
+import WhatsNewModal from '../components/WhatsNewModal'
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -56,7 +58,12 @@ export default function ChildView() {
     queryKey: ['adjustments', 'unseen'],
     queryFn: getUnseenAdjustments
   })
+  const { data: unseenNotifications = [] } = useQuery({
+    queryKey: ['notifications', 'unseen'],
+    queryFn: () => getOwnNotifications({ unseen: true })
+  })
   const [adjustmentsDismissed, setAdjustmentsDismissed] = useState(false)
+  const [whatsNewDismissed, setWhatsNewDismissed] = useState(false)
   const [openRejectedModals, setOpenRejectedModals] = useState(0)
 
   const navigationLocked = activeTab === 'chores' && openRejectedModals > 0
@@ -114,9 +121,17 @@ export default function ChildView() {
         />
       )}
 
+      {(unseenAdjustments.length === 0 || adjustmentsDismissed) &&
+        unseenNotifications.length > 0 && !whatsNewDismissed && (
+        <WhatsNewModal
+          notifications={unseenNotifications}
+          onDone={() => setWhatsNewDismissed(true)}
+        />
+      )}
+
       <div className="relative flex-1 min-h-0">
         <div ref={scrollRef} className="h-full overflow-y-auto scrollbar-hide p-4" style={mounted ? undefined : { pointerEvents: 'none' }} {...swipeHandlers}>
-          {activeTab === 'dashboard' && <ChildDashboardTab />}
+          {activeTab === 'dashboard' && <ChildDashboardTab onNavigate={setActiveTab} />}
           {activeTab === 'chores' && <ChoresTab data={data} isLoading={isLoading} onRejectedModalChange={setOpenRejectedModals} />}
           {activeTab === 'claim' && <ClaimTab />}
           {activeTab === 'rewards' && <RewardsTab data={data} isLoading={isLoading}/>}

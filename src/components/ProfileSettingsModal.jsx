@@ -5,8 +5,10 @@ import { useAuth } from '../context/AuthContext'
 import { updateMe } from '../api/users'
 import { useKboard } from '../hooks/useKboard'
 import AvatarCustomizerModal from './AvatarCustomizerModal'
+import BugReportModal from './BugReportModal'
 
 export default function ProfileSettingsModal({ onClose }) {
+  const [showBugReport, setShowBugReport] = useState(false)
   const { user, updateUser } = useAuth()
 
   const [avatar, setAvatar] = useState(user.avatar ?? null)
@@ -136,6 +138,15 @@ export default function ProfileSettingsModal({ onClose }) {
           </div>
 
         </form>
+
+        <button
+          type="button"
+          onClick={() => setShowBugReport(true)}
+          className="text-xs text-white/40 active:text-white/70 self-center"
+        >
+          🐞 Report a bug
+        </button>
+
       </div>
     </div>
 
@@ -145,6 +156,10 @@ export default function ProfileSettingsModal({ onClose }) {
         onSelect={(a) => { setAvatar(a); setShowCustomizer(false) }}
         onClose={() => setShowCustomizer(false)}
       />
+    )}
+
+    {showBugReport && (
+      <BugReportModal onClose={() => setShowBugReport(false)} />
     )}
     </>
   )

@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { buildAvatarSrc } from '../utils/avatar'
 import { getProfiles } from '../api/auth'
 import { getHouseholdTransactions } from '../api/transactions'
 import { getMissedAssignments } from '../api/assignments'
+import { useKboard } from '../hooks/useKboard'
+import FilterPanel, { FilterSection, FilterOption } from './FilterPanel'
+import HistoryDetailModal from './HistoryDetailModal'
 
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -43,7 +46,7 @@ const SOURCES = [
 
 // ─── Main Orchestrator ──────────────────────────────────────────────────────
 
-export default function ParentHistoryTab() {
+export default function ParentHistoryTab({ txChildId, setTxChildId, missedChildId, setMissedChildId }) {
   const { data: profiles = [] } = useQuery({
     queryKey: ['profiles'],
     queryFn: getProfiles
@@ -53,11 +56,11 @@ export default function ParentHistoryTab() {
 
   return (
     <div className="flex gap-4 h-full">
-      <div className="flex-[3] flex flex-col min-w-0 min-h-0">
-        <TransactionsColumn children={children} />
+      <div className="flex-[5] flex flex-col min-w-0 min-h-0">
+        <TransactionsColumn children={children} childId={txChildId} setChildId={setTxChildId} />
       </div>
-      <div className="flex-[2] flex flex-col min-w-0 min-h-0">
-        <MissedColumn children={children} />
+      <div className="flex-[4] flex flex-col min-w-0 min-h-0">
+        <MissedColumn children={children} childId={missedChildId} setChildId={setMissedChildId} />
       </div>
     </div>
   )
@@ -66,26 +69,36 @@ export default function ParentHistoryTab() {
 
 // ─── Transactions Column ────────────────────────────────────────────────────
 
-function TransactionsColumn({ children }) {
+function TransactionsColumn({ children, childId, setChildId }) {
   const [page, setPage] = useState(1)
   const [sources, setSources] = useState([])
-  const [childId, setChildId] = useState(null)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const searchKb = useKboard(search, setSearch)
   const [showFilter, setShowFilter] = useState(false)
+  const [detailItem, setDetailItem] = useState(null)
+
+  useEffect(() => {
+    if (search === debouncedSearch) return
+    const t = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 300)
+    return () => clearTimeout(t)
+  }, [search, debouncedSearch])
 
   const { data, isLoading } = useQuery({
-    queryKey: ['transactions', 'household', page, sources, childId],
+    queryKey: ['transactions', 'household', page, sources, childId, debouncedSearch],
     queryFn: () => getHouseholdTransactions({
       page, limit: 10,
       ...(sources.length ? { source: sources.join(',') } : {}),
-      ...(childId ? { child_id: childId } : {})
+      ...(childId ? { child_id: childId } : {}),
+      ...(debouncedSearch ? { search: debouncedSearch } : {})
     })
   })
 
   const transactions = data?.data ?? []
   const { totalPages = 1, total = 0 } = data?.pagination ?? {}
-  const hasFilters = sources.length > 0 || !!childId
+  const hasFilters = sources.length > 0 || !!childId || !!debouncedSearch
 
-  const clearFilters = () => { setSources([]); setChildId(null); setPage(1) }
+  const clearFilters = () => { setSources([]); setChildId(null); setSearch(''); setPage(1) }
   const handleChildSelect = (id) => { setChildId(prev => prev === id ? null : id); setPage(1) }
   const handleSourceSelect = (id) => {
     setSources(prev => prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id])
@@ -110,7 +123,7 @@ function TransactionsColumn({ children }) {
         </div>
       ) : (
         <div className="flex-1 flex flex-col gap-2 min-h-0 overflow-y-auto scrollbar-hide">
-          {transactions.map(tx => <TransactionRow key={tx.id} tx={tx} />)}
+          {transactions.map(tx => <TransactionRow key={tx.id} tx={tx} onClick={() => setDetailItem(tx)} />)}
         </div>
       )}
 
@@ -133,15 +146,44 @@ function TransactionsColumn({ children }) {
         onClose={() => setShowFilter(false)}
         side="left"
         title="Transaction Filters"
-        children={children}
-        selectedChildId={childId}
-        onChildSelect={handleChildSelect}
-        sources={SOURCES}
-        selectedSources={sources}
-        onSourceSelect={handleSourceSelect}
         hasActiveFilters={hasFilters}
         onClear={clearFilters}
-      />
+      >
+        <FilterSection title="Search">
+          <input
+            type="text"
+            inputMode="none"
+            value={search}
+            {...searchKb}
+            placeholder="title, reward, reason…"
+            className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-white/30 placeholder:text-white/30"
+          />
+        </FilterSection>
+        <FilterSection title="Children">
+          {children.map(child => (
+            <FilterOption key={child.id} active={childId === child.id} onClick={() => handleChildSelect(child.id)}>
+              <img
+                src={buildAvatarSrc(child.avatar)}
+                alt={child.nick_name || child.name}
+                className={`w-10 h-10 rounded-full transition-shadow ${childId === child.id ? 'ring-2 ring-indigo-400' : ''}`}
+              />
+              <span className="text-sm font-medium">{child.nick_name || child.name}</span>
+            </FilterOption>
+          ))}
+        </FilterSection>
+        <FilterSection title="Source">
+          {SOURCES.map(s => (
+            <FilterOption key={s.id} active={sources.includes(s.id)} onClick={() => handleSourceSelect(s.id)}>
+              <span className="text-base">{s.emoji}</span>
+              <span className="text-sm font-medium">{s.label}</span>
+            </FilterOption>
+          ))}
+        </FilterSection>
+      </FilterPanel>
+
+      {detailItem && (
+        <HistoryDetailModal item={detailItem} kind="transaction" onClose={() => setDetailItem(null)} />
+      )}
     </>
   )
 }
@@ -149,24 +191,34 @@ function TransactionsColumn({ children }) {
 
 // ─── Missed Chores Column ───────────────────────────────────────────────────
 
-function MissedColumn({ children }) {
+function MissedColumn({ children, childId, setChildId }) {
   const [page, setPage] = useState(1)
-  const [childId, setChildId] = useState(null)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const searchKb = useKboard(search, setSearch)
   const [showFilter, setShowFilter] = useState(false)
+  const [detailItem, setDetailItem] = useState(null)
+
+  useEffect(() => {
+    if (search === debouncedSearch) return
+    const t = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 300)
+    return () => clearTimeout(t)
+  }, [search, debouncedSearch])
 
   const { data, isLoading } = useQuery({
-    queryKey: ['assignments', 'missed', page, childId],
+    queryKey: ['assignments', 'missed', page, childId, debouncedSearch],
     queryFn: () => getMissedAssignments({
       page, limit: 10,
-      ...(childId ? { child_id: childId } : {})
+      ...(childId ? { child_id: childId } : {}),
+      ...(debouncedSearch ? { search: debouncedSearch } : {})
     })
   })
 
   const items = data?.data ?? []
   const { totalPages = 1, total = 0 } = data?.pagination ?? {}
-  const hasFilters = !!childId
+  const hasFilters = !!childId || !!debouncedSearch
 
-  const clearFilters = () => { setChildId(null); setPage(1) }
+  const clearFilters = () => { setChildId(null); setSearch(''); setPage(1) }
   const handleChildSelect = (id) => { setChildId(prev => prev === id ? null : id); setPage(1) }
 
   return (
@@ -187,7 +239,7 @@ function MissedColumn({ children }) {
         </div>
       ) : (
         <div className="flex-1 flex flex-col gap-2 min-h-0 overflow-y-auto scrollbar-hide">
-          {items.map(item => <MissedRow key={item.id} item={item} />)}
+          {items.map(item => <MissedRow key={item.id} item={item} onClick={() => setDetailItem(item)} />)}
         </div>
       )}
 
@@ -210,120 +262,62 @@ function MissedColumn({ children }) {
         onClose={() => setShowFilter(false)}
         side="right"
         title="Missed Chore Filters"
-        children={children}
-        selectedChildId={childId}
-        onChildSelect={handleChildSelect}
-        sources={null}
-        selectedSources={[]}
-        onSourceSelect={null}
         hasActiveFilters={hasFilters}
         onClear={clearFilters}
-      />
+      >
+        <FilterSection title="Search">
+          <input
+            type="text"
+            inputMode="none"
+            value={search}
+            {...searchKb}
+            placeholder="chore title…"
+            className="w-full bg-white/10 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-white/30 placeholder:text-white/30"
+          />
+        </FilterSection>
+        <FilterSection title="Children">
+          {children.map(child => (
+            <FilterOption key={child.id} active={childId === child.id} onClick={() => handleChildSelect(child.id)}>
+              <img
+                src={buildAvatarSrc(child.avatar)}
+                alt={child.nick_name || child.name}
+                className={`w-10 h-10 rounded-full transition-shadow ${childId === child.id ? 'ring-2 ring-indigo-400' : ''}`}
+              />
+              <span className="text-sm font-medium">{child.nick_name || child.name}</span>
+            </FilterOption>
+          ))}
+        </FilterSection>
+      </FilterPanel>
+
+      {detailItem && (
+        <HistoryDetailModal item={detailItem} kind="missed" onClose={() => setDetailItem(null)} />
+      )}
     </>
   )
 }
 
 
-// ─── Filter Panel (slide-in) ────────────────────────────────────────────────
-
-function FilterPanel({
-  show, onClose, side, title,
-  children, selectedChildId, onChildSelect,
-  sources, selectedSources, onSourceSelect,
-  hasActiveFilters, onClear
-}) {
-  return (
-    <div className={`fixed inset-0 z-50 ${show ? '' : 'pointer-events-none'}`}>
-      <div
-        className={`absolute inset-0 bg-black/60 transition-opacity duration-300 ${show ? 'opacity-100' : 'opacity-0'}`}
-        onClick={onClose}
-      />
-      <div className={`absolute ${side === 'left' ? 'left-0' : 'right-0'}
-        w-72 bg-slate-800 p-5 flex flex-col rounded-xl
-        transform transition-transform duration-300
-        ${show ? 'translate-x-0' : side === 'left' ? '-translate-x-full' : 'translate-x-full'}`}
-        style={{ top: '7rem', bottom: '1.5rem' }}
-      >
-        {/* Header */}
-        <div className={`flex items-center ${side === 'left' ? 'justify-between' : 'flex-row-reverse justify-between'} mb-6`}>
-          <span className="font-semibold">{title}</span>
-          <button onClick={onClose} className="text-white/50 active:text-white/80 text-lg">✕</button>
-        </div>
-
-        {/* Children */}
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">Children</span>
-          {children.map(child => (
-            <button
-              key={child.id}
-              onClick={() => onChildSelect(child.id)}
-              className={`flex items-center gap-3 py-3 px-2 rounded-lg active:bg-white/15 transition-colors
-                ${selectedChildId === child.id ? 'bg-white/10' : ''}`}
-            >
-              <img
-                src={buildAvatarSrc(child.avatar)}
-                alt={child.nick_name || child.name}
-                className={`w-10 h-10 rounded-full transition-shadow
-                  ${selectedChildId === child.id ? 'ring-2 ring-indigo-400' : ''}`}
-              />
-              <span className="text-sm font-medium">{child.nick_name || child.name}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Source (transactions only) */}
-        {sources && (
-          <div className="flex flex-col gap-1 mt-6">
-            <span className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">Source</span>
-            {sources.map(s => (
-              <button
-                key={s.id}
-                onClick={() => onSourceSelect(s.id)}
-                className={`flex items-center gap-3 py-3 px-2 rounded-lg active:bg-white/15 transition-colors
-                  ${selectedSources.includes(s.id) ? 'bg-white/10' : ''}`}
-              >
-                <span className="text-base">{s.emoji}</span>
-                <span className="text-sm font-medium">{s.label}</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Clear Filters */}
-        <div className="mt-auto pt-4">
-          <button
-            onClick={() => { onClear(); onClose() }}
-            className={`w-full py-2.5 rounded-xl text-sm font-medium bg-white/10 active:bg-white/20
-              ${hasActiveFilters ? '' : 'invisible'}`}
-          >
-            Clear Filters
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 
 // ─── Transaction Row ────────────────────────────────────────────────────────
 
-function TransactionRow({ tx }) {
+function TransactionRow({ tx, onClick }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-4 bg-white/15 rounded-xl border border-transparent">
-      <span className="text-2xl shrink-0">{SOURCE_EMOJI[tx.source]}</span>
-      <span className="text-xl font-semibold truncate min-w-0">{tx.reference_title ?? SOURCE_LABELS[tx.source]}</span>
-      <span className="text-lg font-medium text-white/50 shrink-0">{new Date(tx.created_at).toLocaleDateString()}</span>
-      <div className="ml-auto flex items-center gap-3 shrink-0">
-        {tx.child_name && (
-          <span className="text-lg font-medium text-white/50">{tx.child_name}</span>
-        )}
+    <div onClick={onClick} className="flex items-center gap-3 px-4 py-4 bg-white/15 rounded-xl border border-transparent cursor-pointer active:bg-white/20">
+      <div className="flex items-center gap-3 shrink-0">
+        <span className={`text-lg font-semibold ${TX_COLORS[tx.source] ?? 'text-white/60'}`}>
+          {tx.amount > 0 ? '+' : ''}{tx.amount} pts
+        </span>
         {tx.child_avatar && (
           <img src={buildAvatarSrc(tx.child_avatar)} alt={tx.child_name} className="w-8 h-8 rounded-full" />
         )}
-        <span className={`text-lg font-semibold ml-1 ${TX_COLORS[tx.source] ?? 'text-white/60'}`}>
-          {tx.amount > 0 ? '+' : ''}{tx.amount} pts
-        </span>
+        {tx.child_name && (
+          <span className="text-lg font-medium text-white/50">{tx.child_name}</span>
+        )}
       </div>
+      <span className="text-lg font-medium text-white/50 shrink-0">{new Date(tx.created_at).toLocaleDateString()}</span>
+      <span className="text-xl font-semibold truncate min-w-0 flex-1 text-right">{tx.reference_title ?? SOURCE_LABELS[tx.source]}</span>
+      <span className="text-2xl shrink-0">{SOURCE_EMOJI[tx.source]}</span>
     </div>
   )
 }
@@ -331,11 +325,19 @@ function TransactionRow({ tx }) {
 
 // ─── Missed Row ─────────────────────────────────────────────────────────────
 
-function MissedRow({ item }) {
+function MissedRow({ item, onClick }) {
+  const isOverdue = item.status === 'assigned'
   return (
-    <div className="flex items-center gap-3 px-4 py-4 bg-red-600/10 border border-red-500/20 rounded-xl">
+    <div onClick={onClick} className={`flex items-center gap-3 px-4 py-4 rounded-xl cursor-pointer active:opacity-80 ${
+      isOverdue
+        ? 'bg-amber-600/10 border border-amber-500/30'
+        : 'bg-red-600/10 border border-red-500/20'
+    }`}>
       <span className="text-2xl shrink-0">{item.emoji}</span>
       <span className="text-xl font-semibold truncate min-w-0">{item.chore_title}</span>
+      {isOverdue && (
+        <span className="px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-200 text-xs shrink-0">Overdue</span>
+      )}
       <span className="text-lg font-medium text-white/50 shrink-0">{new Date(item.assigned_at).toLocaleDateString()}</span>
       <div className="ml-auto flex items-center gap-3 shrink-0">
         {item.child_name && (

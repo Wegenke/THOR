@@ -1,41 +1,51 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { claimAssignment } from '../api/assignments'
 
 export default function SlimClaimCard({ assignment }) {
   const queryClient = useQueryClient()
   const [showDescription, setShowDescription] = useState(false)
+  const [claimed, setClaimed] = useState(false)
+  const timerRef = useRef(null)
+
+  useEffect(() => () => clearTimeout(timerRef.current), [])
 
   const claim = useMutation({
     mutationFn: () => claimAssignment(assignment.id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assignments', 'available'] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard', 'child'] })
-      queryClient.invalidateQueries({ queryKey: ['dashboard', 'child', 'summary'] })
+      setClaimed(true)
+      timerRef.current = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['assignments', 'available'] })
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'child'] })
+        queryClient.invalidateQueries({ queryKey: ['dashboard', 'child', 'summary'] })
+      }, 1000)
     }
   })
 
-  const { emoji, chore_title, points, description } = assignment
+  const { emoji, chore_title, points, description, team_chore } = assignment
 
   return (
     <>
-      <div className="bg-white/10 rounded-xl p-3 flex items-center gap-3">
+      <div className={`rounded-xl p-3 flex items-center gap-3 transition-colors ${claimed ? 'bg-green-600/40' : 'bg-white/10'}`}>
         <button
           className="flex items-center gap-3 flex-1 min-w-0 text-left active:opacity-70"
           onClick={() => description && setShowDescription(true)}
+          disabled={claimed}
         >
           <span className="text-2xl shrink-0">{emoji}</span>
           <div className="flex-1 min-w-0">
             <div className="font-semibold text-sm truncate">{chore_title}</div>
           </div>
-          <span className="text-sm font-semibold text-white/70 shrink-0">{points} pts</span>
+          <span className="text-sm font-semibold text-white/70 shrink-0">{points} pts{team_chore ? ' each' : ''}</span>
         </button>
         <button
-          onPointerDown={() => claim.mutate()}
-          disabled={claim.isPending}
-          className="px-4 py-2 rounded-lg bg-blue-600/80 text-sm font-medium disabled:opacity-40 active:bg-blue-600 shrink-0"
+          onPointerDown={() => !claimed && claim.mutate()}
+          disabled={claim.isPending || claimed}
+          className={`px-4 py-2 rounded-lg text-sm font-medium shrink-0 ${
+            claimed ? 'bg-green-500 text-white' : 'bg-blue-600/80 active:bg-blue-600 disabled:opacity-40'
+          }`}
         >
-          Claim
+          {claimed ? '✓ Claimed' : 'Claim'}
         </button>
       </div>
 

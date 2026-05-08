@@ -184,26 +184,28 @@ function RecurrencePrompt({ childName, existingSchedules, onOneTime, onRecurring
   }
 }
 
-export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAssign, onSchedule, onDeleteSchedule }) {
+export default function ChoreTemplateCard({ chore, children, poolCount = 0, onTap, onEdit, onAssign, onSchedule, onDeleteSchedule }) {
   const [cooldowns, setCooldowns] = useState(new Set())
-  const [promptChild, setPromptChild] = useState(null)
+  const [promptTarget, setPromptTarget] = useState(null) // child object OR { pool: true }
   const promptRef = useRef(null)
 
   useEffect(() => {
     const el = promptRef.current
-    if (!promptChild || !el) return
+    if (!promptTarget || !el) return
     const scroll = () => el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     requestAnimationFrame(scroll)
     const ro = new ResizeObserver(scroll)
     ro.observe(el)
     return () => ro.disconnect()
-  }, [promptChild])
+  }, [promptTarget])
+
+  const targetChildId = (target) => target?.pool ? null : target?.id
 
   const handleOneTime = (child_id) => {
     const key = child_id ?? 'pool'
     setCooldowns(prev => new Set(prev).add(key))
     onAssign(child_id)
-    setPromptChild(null)
+    setPromptTarget(null)
     setTimeout(() => setCooldowns(prev => { const next = new Set(prev); next.delete(key); return next }), 2000)
   }
 
@@ -212,42 +214,51 @@ export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAs
   }
 
   const finishRecurring = (child_id) => {
-    const key = child_id
+    const key = child_id ?? 'pool'
     setCooldowns(prev => new Set(prev).add(key))
-    setPromptChild(null)
+    setPromptTarget(null)
     setTimeout(() => setCooldowns(prev => { const next = new Set(prev); next.delete(key); return next }), 2000)
   }
 
   const hasSchedule = (child_id) => (chore.schedules || []).some(s => s.child_id === child_id)
+  const hasPoolSchedule = (chore.schedules || []).some(s => s.child_id === null)
+  const poolSchedules = (chore.schedules || []).filter(s => s.child_id === null)
 
   return (
     <div className="relative">
       <div className="bg-white/15 rounded-xl p-4 flex flex-col gap-3 h-full">
-        <div className="flex items-start justify-between min-h-0">
+        <div className="flex items-start justify-between min-h-0 gap-3">
           <div className="flex items-start gap-3 min-w-0 flex-1" onClick={onTap}>
             <span className="text-3xl shrink-0">{chore.emoji}</span>
             <div className="min-w-0">
-              <div className="font-semibold text-base leading-tight">{chore.title}</div>
+              <div className="font-semibold text-base leading-tight truncate">{chore.title}</div>
               {chore.description && (
                 <div className="text-white/40 text-xs mt-0.5 truncate">{chore.description}</div>
               )}
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-white font-semibold text-lg whitespace-nowrap">{chore.points} pts</span>
+            {chore.team_chore && (
+              <span className="px-2 py-0.5 rounded-full bg-amber-600/30 text-amber-200 text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap">
+                👥 Team
+              </span>
+            )}
+            <span className="text-white font-semibold text-lg whitespace-nowrap">
+              {chore.points} pts{chore.team_chore && <span className="text-white/50 text-sm font-normal"> each</span>}
+            </span>
             <button onClick={onEdit} className="text-white/50 active:text-white/80 text-2xl leading-none">⚙</button>
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 mt-auto">
           {children.map(child => {
             const on = cooldowns.has(child.id)
             const scheduled = hasSchedule(child.id)
-            const active = promptChild?.id === child.id
+            const active = !promptTarget?.pool && promptTarget?.id === child.id
             return (
               <button
                 key={child.id}
-                onClick={() => setPromptChild(child)}
+                onClick={() => setPromptTarget(child)}
                 disabled={on}
                 className={`flex-1 py-3 rounded-lg text-base font-medium flex items-center justify-center gap-2 ${active ? 'ring-3 ring-pink-400' : ''} ${on ? 'bg-green-600/80 opacity-60' : scheduled ? 'bg-purple-600/80 active:bg-purple-600' : 'bg-blue-600/80 active:bg-blue-600'}`}
               >
@@ -260,29 +271,35 @@ export default function ChoreTemplateCard({ chore, children, onTap, onEdit, onAs
           })}
           {(() => {
             const on = cooldowns.has('pool')
+            const active = promptTarget?.pool === true
             return (
               <button
-                onClick={() => handleOneTime(null)}
+                onClick={() => setPromptTarget({ pool: true })}
                 disabled={on}
-                className={`flex-1 py-3 rounded-lg text-base font-medium ${on ? 'bg-green-600/80 opacity-60' : 'bg-white/10 active:bg-white/20'}`}
+                className={`relative flex-1 py-3 rounded-lg text-base font-medium ${active ? 'ring-3 ring-pink-400' : ''} ${on ? 'bg-green-600/80 opacity-60' : hasPoolSchedule ? 'bg-amber-600/70 active:bg-amber-600' : 'bg-white/10 active:bg-white/20'}`}
               >
-                {on ? '✓' : 'Pool'}
+                {on ? '✓' : '🏊 Pool'}
+                {!on && poolCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1.5 rounded-full bg-amber-400 text-slate-900 text-xs font-bold flex items-center justify-center">
+                    {poolCount}
+                  </span>
+                )}
               </button>
             )
           })()}
         </div>
       </div>
 
-      {promptChild && (
+      {promptTarget && (
         <div ref={promptRef} className="absolute left-2 right-2 top-full -mt-5 z-10">
           <RecurrencePrompt
-            childName={promptChild.name}
-            existingSchedules={(chore.schedules || []).filter(s => s.child_id === promptChild.id)}
-            onOneTime={() => handleOneTime(promptChild.id)}
-            onRecurring={(freq, dow, dom) => handleRecurring(promptChild.id, freq, dow, dom)}
+            childName={promptTarget.pool ? 'Pool' : promptTarget.name}
+            existingSchedules={promptTarget.pool ? poolSchedules : (chore.schedules || []).filter(s => s.child_id === promptTarget.id)}
+            onOneTime={() => handleOneTime(targetChildId(promptTarget))}
+            onRecurring={(freq, dow, dom) => handleRecurring(targetChildId(promptTarget), freq, dow, dom)}
             onDeleteSchedule={onDeleteSchedule}
-            onDone={() => finishRecurring(promptChild.id)}
-            onCancel={() => setPromptChild(null)}
+            onDone={() => finishRecurring(targetChildId(promptTarget))}
+            onCancel={() => setPromptTarget(null)}
           />
         </div>
       )}

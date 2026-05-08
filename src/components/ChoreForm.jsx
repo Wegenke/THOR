@@ -8,6 +8,7 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
   const [title,          setTitle]         = useState(initial?.title            ?? '')
   const [points,         setPoints]        = useState(initial?.points != null   ? String(initial.points) : '')
   const [description,    setDescription]   = useState(initial?.description      ?? '')
+  const [teamChore,      setTeamChore]     = useState(initial?.team_chore       ?? false)
   const [saving,         setSaving]        = useState(false)
 
   const [emojiOpen, setEmojiOpen] = useState(false)
@@ -28,7 +29,7 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
   useEffect(() => () => kb?.dismiss(), [])
 
   const handleSave = () => {
-    const data = { emoji, title, points: Number(points), description }
+    const data = { emoji, title, points: Number(points), description, team_chore: teamChore }
     if (!data.description) delete data.description
     setSaving(true)
     onSave(data).catch(() => setSaving(false))
@@ -80,6 +81,7 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
             onClick={() => setPoints(p => String((Number(p) || 0) + 10))}
             className="w-13 h-13 rounded-lg bg-green-600/70 text-2xl font-bold active:bg-green-600"
           >+</button>
+          {teamChore && <span className="text-sm text-white/50 ml-1">each</span>}
         </div>
       </div>
       <input
@@ -90,6 +92,16 @@ export default function ChoreForm({ initial, onSave, onCancel }) {
         className="bg-white/10 rounded-lg px-4 py-3 text-base outline-none placeholder:text-white/30"
         placeholder="Description (optional)"
       />
+      <button
+        type="button"
+        onClick={() => setTeamChore(t => !t)}
+        className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium ${
+          teamChore ? 'bg-amber-600/70 active:bg-amber-600' : 'bg-white/10 active:bg-white/20'
+        }`}
+      >
+        <span className="text-base">{teamChore ? '✓' : ''} 👥</span>
+        Team chore — every kid earns full points
+      </button>
       <div className="flex gap-3">
         <button
           onClick={handleSave}

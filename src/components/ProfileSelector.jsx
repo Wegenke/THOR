@@ -7,15 +7,22 @@ function ProfileRow({ profiles, onSelect, lockedUsers, onLockoutExpired }) {
       {profiles.map(profile => {
         const isLocked = !!lockedUsers[profile.id]
         const avatarSrc = buildAvatarSrc(profile.avatar)
+        const hasUnseen = ((profile.unseen_notifications ?? 0) + (profile.unseen_adjustments ?? 0)) > 0
         return (
           <button
             key={profile.id}
             onClick={() => onSelect(profile)}
             disabled={isLocked}
-            className="aspect-square h-full max-h-full flex flex-col items-center justify-center gap-3 rounded-full bg-white/15 disabled:opacity-50"
+            className="relative aspect-square h-full max-h-full flex flex-col items-center justify-center gap-3 rounded-full bg-white/15 disabled:opacity-50"
           >
             <img src={avatarSrc} alt={profile.name} className="w-1/2 h-1/2 rounded-full" />
             <span className="text-lg font-medium">{profile.name}</span>
+            {hasUnseen && !isLocked && (
+              <span
+                aria-label="Unseen notifications"
+                className="absolute top-[10%] right-[10%] w-12 h-12 rounded-full bg-orange-500 ring-4 ring-slate-900/60 animate-breathe"
+              />
+            )}
             {isLocked && (
               <LockoutTimer
                 expiresAt={lockedUsers[profile.id]}

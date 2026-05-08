@@ -1,12 +1,17 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useKboard } from '../hooks/useKboard'
-import { getTaskNotes, addTaskNote } from '../api/parentTasks'
+import { getTaskNotes, addTaskNote, updateParentTask } from '../api/parentTasks'
 
 export default function TaskNotesModal({ task, onClose }) {
   const queryClient = useQueryClient()
   const [content, setContent] = useState('')
   const contentKb = useKboard(content, setContent)
+
+  const [currentTitle, setCurrentTitle] = useState(task.title)
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState(task.title)
+  const titleKb = useKboard(titleDraft, setTitleDraft)
 
   const { data: notes = [], isLoading } = useQuery({
     queryKey: ['parentTaskNotes', task.id],
@@ -21,10 +26,39 @@ export default function TaskNotesModal({ task, onClose }) {
     }
   })
 
+  const updateTitle = useMutation({
+    mutationFn: () => updateParentTask(task.id, { title: titleDraft.trim() }),
+    onSuccess: (updated) => {
+      setCurrentTitle(updated?.title ?? titleDraft.trim())
+      setEditingTitle(false)
+      queryClient.invalidateQueries({ queryKey: ['parentTasks'] })
+      queryClient.invalidateQueries({ queryKey: ['parentTasks', 'recent'] })
+    }
+  })
+
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!content.trim()) return
     add.mutate()
+  }
+
+  const startEditTitle = () => {
+    setTitleDraft(currentTitle)
+    setEditingTitle(true)
+  }
+
+  const cancelEditTitle = () => {
+    setTitleDraft(currentTitle)
+    setEditingTitle(false)
+  }
+
+  const saveTitle = () => {
+    const trimmed = titleDraft.trim()
+    if (!trimmed || trimmed === currentTitle) {
+      cancelEditTitle()
+      return
+    }
+    updateTitle.mutate()
   }
 
   const timeAgo = (dateStr) => {
@@ -42,10 +76,38 @@ export default function TaskNotesModal({ task, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
       <div className="w-[28rem] max-h-[80vh] bg-slate-800 rounded-2xl p-5 flex flex-col gap-4" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between">
-          <span className="font-semibold truncate pr-4">{task.title}</span>
-          <button onClick={onClose} className="text-white/50 active:text-white/80 text-lg shrink-0">✕</button>
-        </div>
+        {editingTitle ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              inputMode="none"
+              value={titleDraft}
+              {...titleKb}
+              maxLength={255}
+              className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-sm font-semibold outline-none focus:ring-1 focus:ring-white/30"
+            />
+            <button
+              onClick={saveTitle}
+              disabled={!titleDraft.trim() || updateTitle.isPending}
+              className="px-3 py-2 rounded-lg text-sm font-medium bg-indigo-600/80 disabled:opacity-40 active:bg-indigo-600 shrink-0"
+            >Save</button>
+            <button
+              onClick={cancelEditTitle}
+              disabled={updateTitle.isPending}
+              className="px-3 py-2 rounded-lg text-sm font-medium bg-white/10 active:bg-white/20 shrink-0"
+            >Cancel</button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="font-semibold truncate flex-1">{currentTitle}</span>
+            <button
+              onClick={startEditTitle}
+              className="text-white/50 active:text-white/80 text-base px-2 shrink-0"
+              aria-label="Edit title"
+            >✏️</button>
+            <button onClick={onClose} className="text-white/50 active:text-white/80 text-lg shrink-0">✕</button>
+          </div>
+        )}
 
         {task.status !== 'archived' && (
           <form onSubmit={handleSubmit} className="flex gap-2">

@@ -5,6 +5,10 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+@media (pointer: coarse) {
+  *, *::before, *::after { cursor: none !important; }
+}
+
 @keyframes spin-slow {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -53,6 +57,14 @@
 .animate-points-pop {
   display: inline-block;
   animation: points-pop 250ms ease-out both;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.95; }
+  50%      { transform: scale(1.18); opacity: 1; }
+}
+.animate-breathe {
+  animation: breathe 1.6s ease-in-out infinite;
 }
 
 .bg-app-gradient {
